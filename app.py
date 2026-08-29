@@ -508,8 +508,6 @@ matches = create_matches()
 
 save_tournament_state()
 
-print("DEBUG FIRST MATCH:", matches[0])
-print("DEBUG TOTAL MATCHES:", len(matches))
 
 print(
     "Current fixture schedule saved to Supabase."
