@@ -112,7 +112,8 @@ def create_match(
     status="upcoming",
     label=None,
     match_time=None,
-    session_name=None
+    session_name=None,
+    match_date=None
 ):
 
     return {
@@ -125,6 +126,7 @@ def create_match(
 
         "status": status,
 
+        "date": match_date,
         "time": match_time,
         "session": session_name,
 
@@ -157,10 +159,12 @@ def create_matches():
 
     day_one_fixtures = [
 
+        # stage, team A, team B, date, time, session
         (
             "Pool 2",
             "Zenith",
             "Net Warriors",
+            "30 August 2026",
             "5:00 – 5:45 AM",
             "Morning Session"
         ),
@@ -169,6 +173,7 @@ def create_matches():
             "Pool 3",
             "Spike Force",
             "Null Scapes",
+            "30 August 2026",
             "5:50 – 6:30 AM",
             "Morning Session"
         ),
@@ -177,6 +182,7 @@ def create_matches():
             "Pool 2",
             "Zenith",
             "Avengers",
+            "30 August 2026",
             "6:40 – 7:15 AM",
             "Morning Session"
         ),
@@ -185,6 +191,7 @@ def create_matches():
             "Pool 1",
             "Mahua Boyz",
             "Predators",
+            "30 August 2026",
             "7:20 – 8:00 AM",
             "Morning Session"
         ),
@@ -193,6 +200,7 @@ def create_matches():
             "Pool 2",
             "Avengers",
             "Apex",
+            "30 August 2026",
             "8:05 – 8:45 AM",
             "Morning Session"
         ),
@@ -201,6 +209,7 @@ def create_matches():
             "Pool 1",
             "Dominators",
             "Predators",
+            "30 August 2026",
             "8:50 – 9:30 AM",
             "Morning Session"
         ),
@@ -214,6 +223,7 @@ def create_matches():
             "Pool 1",
             "Dominators",
             "Mahua Boyz",
+            "30 August 2026",
             "3:00 – 3:45 PM",
             "Evening Session"
         ),
@@ -222,6 +232,7 @@ def create_matches():
             "Pool 2",
             "Apex",
             "Net Warriors",
+            "30 August 2026",
             "3:50 – 4:30 PM",
             "Evening Session"
         ),
@@ -230,6 +241,7 @@ def create_matches():
             "Pool 2",
             "Avengers",
             "Net Warriors",
+            "30 August 2026",
             "4:40 – 5:40 PM",
             "Evening Session"
         )
@@ -244,6 +256,7 @@ def create_matches():
         stage,
         team_a,
         team_b,
+        match_date,
         match_time,
         session_name
     ) in day_one_fixtures:
@@ -256,7 +269,8 @@ def create_matches():
                 team_a,
                 team_b,
                 match_time=match_time,
-                session_name=session_name
+                session_name=session_name,
+                match_date=match_date
             )
         )
 
@@ -852,6 +866,120 @@ def undo_point(match_id, side):
     save_tournament_state()
 
     return jsonify(match)
+
+
+# =========================================================
+# SCHEDULE / ADD FUTURE FIXTURES WITHOUT RESETTING SCORES
+# =========================================================
+
+@app.route(
+    "/api/schedule-fixtures",
+    methods=["POST"]
+)
+@admin_required
+def schedule_fixtures():
+    """
+    Schedule existing upcoming fixtures, or add a new fixture if it does not
+    already exist. Finished/live matches are never modified, so past scores
+    and set history remain safe.
+    """
+
+    global matches
+
+    data = request.get_json(silent=True) or {}
+    fixtures = data.get("fixtures")
+
+    if not isinstance(fixtures, list) or not fixtures:
+        return jsonify({
+            "error": "Provide a non-empty fixtures list"
+        }), 400
+
+    updated = []
+    added = []
+
+    next_id = max(
+        (match["id"] for match in matches),
+        default=0
+    ) + 1
+
+    for fixture in fixtures:
+
+        if not isinstance(fixture, dict):
+            return jsonify({
+                "error": "Each fixture must be an object"
+            }), 400
+
+        stage = fixture.get("stage")
+        team_a = fixture.get("teamA")
+        team_b = fixture.get("teamB")
+        match_date = fixture.get("date")
+        match_time = fixture.get("time")
+        session_name = fixture.get("session")
+
+        if not all([
+            stage,
+            team_a,
+            team_b,
+            match_date,
+            match_time,
+            session_name
+        ]):
+            return jsonify({
+                "error": "Each fixture requires stage, teamA, teamB, date, time and session"
+            }), 400
+
+        existing = next(
+            (
+                match for match in matches
+                if match["stage"] == stage
+                and {match["teamA"], match["teamB"]} == {team_a, team_b}
+            ),
+            None
+        )
+
+        # If the pool fixture already exists, schedule it instead of creating
+        # a duplicate. Never overwrite a match that has already started.
+        if existing:
+
+            if existing["status"] != "upcoming":
+                return jsonify({
+                    "error": (
+                        f'{team_a} vs {team_b} cannot be rescheduled because '
+                        f'its status is {existing["status"]}'
+                    )
+                }), 400
+
+            existing["date"] = match_date
+            existing["time"] = match_time
+            existing["session"] = session_name
+
+            updated.append(existing["id"])
+
+        else:
+
+            new_match = create_match(
+                next_id,
+                stage,
+                team_a,
+                team_b,
+                match_time=match_time,
+                session_name=session_name,
+                match_date=match_date
+            )
+
+            matches.append(new_match)
+            added.append(next_id)
+            next_id += 1
+
+    save_tournament_state()
+
+    return jsonify({
+        "success": True,
+        "message": "Fixtures scheduled without resetting tournament scores",
+        "updated_match_ids": updated,
+        "added_match_ids": added,
+        "total_matches": len(matches)
+    })
 
 
 # =========================================================

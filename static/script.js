@@ -728,70 +728,190 @@ function updateFixtures() {
             "fixturesContainer"
         );
 
-
     container.innerHTML = "";
 
 
-    tournamentData.matches
-        .filter(
+    const poolMatches =
+        tournamentData.matches.filter(
             match =>
                 match.stage.startsWith("Pool")
-        )
-        .forEach(match => {
-
-            let score = "VS";
+        );
 
 
-            if (
-                match.status === "finished"
-                || match.status === "live"
-            ) {
+    // Group matches:
+    // Date → Session → Matches
 
-                score =
-                    `${match.setsA} - ${match.setsB}`;
+    const grouped = {};
 
-            }
+
+    poolMatches.forEach(match => {
+
+        const date =
+            match.date || "Date To Be Announced";
+
+
+        const session =
+            match.session || "Session To Be Announced";
+
+
+        if (!grouped[date]) {
+
+            grouped[date] = {};
+
+        }
+
+
+        if (!grouped[date][session]) {
+
+            grouped[date][session] = [];
+
+        }
+
+
+        grouped[date][session].push(match);
+
+    });
+
+
+    // Display Date
+
+    Object.entries(grouped)
+        .forEach(([date, sessions]) => {
 
 
             container.innerHTML += `
 
-                <div class="match-row">
+                <div class="fixture-date-heading">
 
-                    <div class="match-stage">
-                        ${match.stage}
-                        • Match ${match.id}
-                    </div>
-
-
-                    <div class="match-teams">
-
-                        ${match.teamA}
-
-                        <b>${score}</b>
-
-                        ${match.teamB}
-
-                    </div>
-
-
-                    <div class="
-                        match-status
-                        ${match.status}
-                    ">
-
-                        ${match.status.toUpperCase()}
-
-                    </div>
+                    📅 ${date}
 
                 </div>
 
             `;
 
+
+            // Display Session
+
+            Object.entries(sessions)
+                .forEach(
+                    ([session, sessionMatches]) => {
+
+
+                        let sessionIcon = "📌";
+
+
+                        if (
+                            session
+                                .toLowerCase()
+                                .includes("morning")
+                        ) {
+
+                            sessionIcon = "🌅";
+
+                        }
+
+
+                        else if (
+                            session
+                                .toLowerCase()
+                                .includes("evening")
+                        ) {
+
+                            sessionIcon = "🌆";
+
+                        }
+
+
+                        container.innerHTML += `
+
+                            <div class="fixture-session-heading">
+
+                                ${sessionIcon} ${session}
+
+                            </div>
+
+                        `;
+
+
+                        // Display Matches
+
+                        sessionMatches.forEach(match => {
+
+
+                            let score = "VS";
+
+
+                            if (
+                                match.status === "finished"
+                                ||
+                                match.status === "live"
+                            ) {
+
+                                score =
+                                    `${match.setsA} - ${match.setsB}`;
+
+                            }
+
+
+                            const time =
+                                match.time
+                                ||
+                                "Time To Be Announced";
+
+
+                            container.innerHTML += `
+
+                                <div class="match-row">
+
+
+                                    <div class="match-stage">
+
+                                        ${match.stage}
+                                        • Match ${match.id}
+
+                                    </div>
+
+
+                                    <div class="fixture-time">
+
+                                        ⏰ ${time}
+
+                                    </div>
+
+
+                                    <div class="match-teams">
+
+                                        ${match.teamA}
+
+                                        <b>${score}</b>
+
+                                        ${match.teamB}
+
+                                    </div>
+
+
+                                    <div class="
+                                        match-status
+                                        ${match.status}
+                                    ">
+
+                                        ${match.status.toUpperCase()}
+
+                                    </div>
+
+
+                                </div>
+
+                            `;
+
+                        });
+
+                    }
+                );
+
         });
 
 }
-
-
 /* =========================================================
    STANDINGS
 ========================================================= */
