@@ -1,76 +1,87 @@
 let tournamentData = null;
-
 let selectedMatchId = null;
+let isAdmin = false;
 
 
-/* LOAD DATA */
+/* =========================================================
+   LOAD DATA
+========================================================= */
 
 async function loadData() {
 
-    const response = await fetch("/api/data");
+    try {
 
-    tournamentData = await response.json();
+        const response = await fetch("/api/data");
 
-    updateEverything();
+        tournamentData = await response.json();
+
+        updateEverything();
+
+    } catch (error) {
+
+        console.error("Could not load tournament data:", error);
+
+    }
 
 }
 
 
-/* UPDATE EVERYTHING */
+/* =========================================================
+   UPDATE EVERYTHING
+========================================================= */
 
 function updateEverything() {
 
+    if (!tournamentData) return;
+
     updateMatchSelect();
-
     updateLiveScore();
-
     updatePools();
-
     updateFixtures();
-
     updateStandings();
-
     updateKnockout();
-
     updateAdminPanel();
 
 }
 
 
-/* PAGE NAVIGATION */
+/* =========================================================
+   PAGE NAVIGATION
+========================================================= */
 
 function showPage(page, button) {
 
-    document.querySelectorAll(".page").forEach(p => {
+    document
+        .querySelectorAll(".page")
+        .forEach(pageElement => {
 
-        p.classList.add("hidden");
+            pageElement.classList.add("hidden");
 
-    });
-
-    document.getElementById(page + "Page").classList.remove("hidden");
+        });
 
 
-    document.querySelectorAll(".nav-btn").forEach(btn => {
+    document
+        .getElementById(page + "Page")
+        .classList.remove("hidden");
 
-        btn.classList.remove("active");
 
-    });
+    document
+        .querySelectorAll(".nav-btn")
+        .forEach(navButton => {
+
+            navButton.classList.remove("active");
+
+        });
+
 
     button.classList.add("active");
 
 }
 
 
-/* ADMIN TOGGLE */
-
-/* ===================================
-   ADMIN AUTHENTICATION
-=================================== */
-
-let isAdmin = false;
-
-
-/* OPEN LOGIN */
+/* =========================================================
+   ADMIN LOGIN MODAL
+========================================================= */
 
 function openAdminLogin() {
 
@@ -84,6 +95,7 @@ function openAdminLogin() {
 
     }
 
+
     document
         .getElementById("loginModal")
         .classList.remove("hidden");
@@ -91,13 +103,12 @@ function openAdminLogin() {
 }
 
 
-/* CLOSE LOGIN */
-
 function closeAdminLogin() {
 
     document
         .getElementById("loginModal")
         .classList.add("hidden");
+
 
     document
         .getElementById("loginError")
@@ -106,41 +117,33 @@ function closeAdminLogin() {
 }
 
 
-/* LOGIN */
+/* =========================================================
+   LOGIN
+========================================================= */
 
 async function loginAdmin() {
 
     const username =
-        document.getElementById("adminUsername").value;
+        document.getElementById("adminUsername").value.trim();
 
     const password =
         document.getElementById("adminPassword").value;
 
 
     const response = await fetch(
-
         "/api/admin/login",
-
         {
-
             method: "POST",
 
             headers: {
-
                 "Content-Type": "application/json"
-
             },
 
             body: JSON.stringify({
-
-                username: username,
-
-                password: password
-
+                username,
+                password
             })
-
         }
-
     );
 
 
@@ -161,7 +164,6 @@ async function loginAdmin() {
 
     isAdmin = true;
 
-
     closeAdminLogin();
 
 
@@ -172,13 +174,22 @@ async function loginAdmin() {
 
     document
         .getElementById("adminButton")
-        .textContent =
-        "⚙ ADMIN PANEL";
+        .textContent = "⚙ ADMIN PANEL";
+
+
+    document
+        .getElementById("adminPassword")
+        .value = "";
+
+
+    await loadData();
 
 }
 
 
-/* CHECK EXISTING SESSION */
+/* =========================================================
+   CHECK ADMIN SESSION
+========================================================= */
 
 async function checkAdminStatus() {
 
@@ -203,12 +214,10 @@ async function checkAdminStatus() {
 
         }
 
-    }
-
-    catch (error) {
+    } catch (error) {
 
         console.error(
-            "Could not check admin status",
+            "Could not check admin status:",
             error
         );
 
@@ -217,43 +226,121 @@ async function checkAdminStatus() {
 }
 
 
+/* =========================================================
+   LOGOUT
+========================================================= */
 
-/* MATCH SELECT */
+async function logoutAdmin() {
+
+    await fetch(
+        "/api/admin/logout",
+        {
+            method: "POST"
+        }
+    );
+
+
+    isAdmin = false;
+
+
+    document
+        .getElementById("adminPanel")
+        .classList.add("hidden");
+
+
+    document
+        .getElementById("adminButton")
+        .textContent =
+        "🔐 ADMIN LOGIN";
+
+
+    alert("Logged out successfully.");
+
+}
+
+
+/* =========================================================
+   MATCH SELECT
+========================================================= */
 
 function updateMatchSelect() {
 
-    const select = document.getElementById("matchSelect");
+    const select =
+        document.getElementById("matchSelect");
+
+
+    const availableMatches =
+        tournamentData.matches.filter(
+            match =>
+                match.status !== "locked"
+                && match.status !== "finished"
+        );
+
 
     select.innerHTML = "";
 
-    tournamentData.matches.forEach(match => {
 
-        if (match.status === "locked") return;
+    availableMatches.forEach(match => {
 
-        const option = document.createElement("option");
+        const option =
+            document.createElement("option");
+
 
         option.value = match.id;
 
+
         option.textContent =
             `Match ${match.id} • ${match.teamA} vs ${match.teamB}`;
+
 
         select.appendChild(option);
 
     });
 
 
-    if (selectedMatchId === null) {
+    if (availableMatches.length === 0) {
 
-        selectedMatchId = Number(select.value);
+        selectedMatchId = null;
+
+        return;
 
     }
+
+
+    const selectedStillExists =
+        availableMatches.some(
+            match =>
+                match.id === selectedMatchId
+        );
+
+
+    if (
+        selectedMatchId === null
+        || !selectedStillExists
+    ) {
+
+        const liveMatch =
+            availableMatches.find(
+                match =>
+                    match.status === "live"
+            );
+
+
+        selectedMatchId =
+            liveMatch
+                ? liveMatch.id
+                : availableMatches[0].id;
+
+    }
+
 
     select.value = selectedMatchId;
 
 
     select.onchange = () => {
 
-        selectedMatchId = Number(select.value);
+        selectedMatchId =
+            Number(select.value);
 
         updateAdminPanel();
 
@@ -262,58 +349,98 @@ function updateMatchSelect() {
 }
 
 
-/* GET SELECTED MATCH */
+/* =========================================================
+   GET SELECTED MATCH
+========================================================= */
 
 function getSelectedMatch() {
 
+    if (!selectedMatchId) return null;
+
+
     return tournamentData.matches.find(
-        m => m.id === selectedMatchId
+        match =>
+            match.id === selectedMatchId
     );
 
 }
 
 
-/* ADMIN DISPLAY */
+/* =========================================================
+   ADMIN PANEL
+========================================================= */
 
 function updateAdminPanel() {
 
-    const match = getSelectedMatch();
+    const match =
+        getSelectedMatch();
+
 
     if (!match) return;
 
-    document.getElementById("adminTeamA").textContent =
+
+    document
+        .getElementById("adminTeamA")
+        .textContent =
         match.teamA;
 
-    document.getElementById("adminTeamB").textContent =
+
+    document
+        .getElementById("adminTeamB")
+        .textContent =
         match.teamB;
 
-    document.getElementById("adminScoreA").textContent =
+
+    document
+        .getElementById("adminScoreA")
+        .textContent =
         match.scoreA;
 
-    document.getElementById("adminScoreB").textContent =
+
+    document
+        .getElementById("adminScoreB")
+        .textContent =
         match.scoreB;
 
-    document.getElementById("adminSets").textContent =
+
+    document
+        .getElementById("adminSets")
+        .textContent =
         `${match.setsA} - ${match.setsB}`;
 
 
-    let target = 25;
+    const completedSets =
+        match.setHistory.length;
 
-    if (match.setsA === 1 && match.setsB === 1) {
 
-        target = 15;
+    const target =
+        completedSets === 2
+            ? 15
+            : 25;
 
-    }
 
-    document.getElementById("targetText").textContent =
+    document
+        .getElementById("targetText")
+        .textContent =
         `Target: ${target}`;
 
 }
 
 
-/* START MATCH */
+/* =========================================================
+   START MATCH
+========================================================= */
 
 async function startSelectedMatch() {
+
+    if (!selectedMatchId) {
+
+        alert("No match available.");
+
+        return;
+
+    }
+
 
     const response = await fetch(
         `/api/start/${selectedMatchId}`,
@@ -322,75 +449,120 @@ async function startSelectedMatch() {
         }
     );
 
-    const result = await response.json();
 
-    if (result.error) {
+    const result =
+        await response.json();
 
-        alert(result.error);
+
+    if (!response.ok) {
+
+        alert(
+            result.error
+            || "Could not start match."
+        );
+
+        return;
 
     }
+
 
     await loadData();
 
 }
 
 
-/* ADD POINT */
+/* =========================================================
+   ADD POINT
+========================================================= */
 
 async function addPoint(side) {
 
+    if (!selectedMatchId) return;
+
+
     const response = await fetch(
-
         `/api/point/${selectedMatchId}/${side}`,
-
         {
             method: "POST"
         }
-
     );
 
-    const result = await response.json();
 
-    if (result.error) {
+    const result =
+        await response.json();
 
-        alert(result.error);
+
+    if (!response.ok) {
+
+        alert(
+            result.error
+            || "Could not add point."
+        );
+
+        return;
 
     }
 
+
     await loadData();
 
 }
 
 
-/* UNDO POINT */
+/* =========================================================
+   UNDO POINT
+========================================================= */
 
 async function undoPoint(side) {
 
-    await fetch(
+    if (!selectedMatchId) return;
 
+
+    const response = await fetch(
         `/api/undo/${selectedMatchId}/${side}`,
-
         {
             method: "POST"
         }
-
     );
+
+
+    const result =
+        await response.json();
+
+
+    if (!response.ok) {
+
+        alert(
+            result.error
+            || "Could not undo point."
+        );
+
+        return;
+
+    }
+
 
     await loadData();
 
 }
 
 
-/* LIVE SCORE */
+/* =========================================================
+   LIVE SCORE
+========================================================= */
 
 function updateLiveScore() {
 
-    const liveMatch = tournamentData.matches.find(
-        m => m.status === "live"
-    );
+    const liveMatch =
+        tournamentData.matches.find(
+            match =>
+                match.status === "live"
+        );
 
 
-    const status = document.getElementById("liveStatus");
+    const status =
+        document.getElementById("liveStatus");
+
 
     const container =
         document.getElementById("liveScoreContainer");
@@ -398,19 +570,17 @@ function updateLiveScore() {
 
     if (!liveMatch) {
 
-        status.textContent = "⏳ NO MATCH LIVE";
+        status.textContent =
+            "⏳ NO MATCH LIVE";
+
 
         status.classList.remove("active");
 
+
         container.innerHTML = `
-
             <div class="no-live">
-
-                Select a match from the Admin Panel
-                and press <b>START MATCH</b>.
-
+                No match is currently live.
             </div>
-
         `;
 
         return;
@@ -418,19 +588,37 @@ function updateLiveScore() {
     }
 
 
-    status.textContent = "🔴 LIVE NOW";
+    status.textContent =
+        "🔴 LIVE NOW";
+
 
     status.classList.add("active");
 
 
+    const currentSet =
+        liveMatch.setHistory.length + 1;
+
+
+    const target =
+        currentSet === 3
+            ? 15
+            : 25;
+
+
     let history = "";
+
 
     if (liveMatch.setHistory.length > 0) {
 
         history =
             liveMatch.setHistory
-                .map((set, index) =>
-                    `<span>Set ${index + 1}: ${set.a}-${set.b}</span>`
+                .map(
+                    (set, index) => `
+                        <span>
+                            Set ${index + 1}:
+                            ${set.a} - ${set.b}
+                        </span>
+                    `
                 )
                 .join("");
 
@@ -442,51 +630,44 @@ function updateLiveScore() {
         <div class="live-score-card">
 
             <div class="live-team">
-
                 ${liveMatch.teamA}
-
             </div>
 
+
             <div class="live-score">
-
                 ${liveMatch.scoreA}
-
             </div>
 
 
             <div class="live-middle">
 
-                SETS
+                SET ${currentSet}
 
                 <strong>
-
                     ${liveMatch.setsA}
                     -
                     ${liveMatch.setsB}
-
                 </strong>
+
+                <small>
+                    Target: ${target}
+                </small>
 
             </div>
 
 
             <div class="live-score">
-
                 ${liveMatch.scoreB}
-
             </div>
 
 
             <div class="live-team">
-
                 ${liveMatch.teamB}
-
             </div>
 
 
             <div class="set-history">
-
                 ${history}
-
             </div>
 
         </div>
@@ -496,73 +677,75 @@ function updateLiveScore() {
 }
 
 
-/* POOL TEAMS */
+/* =========================================================
+   POOLS
+========================================================= */
 
 function updatePools() {
 
-    tournamentData.pools["Pool 1"]
-        .forEach((team, index) => {
-
-            document.getElementById("pool1Teams")
-                .innerHTML += `
-                    <div class="pool-team">
-                        <span>${index + 1}</span>
-                        ${team}
-                    </div>
-                `;
-
-        });
+    const poolContainers = {
+        "Pool 1": "pool1Teams",
+        "Pool 2": "pool2Teams",
+        "Pool 3": "pool3Teams"
+    };
 
 
-    tournamentData.pools["Pool 2"]
-        .forEach((team, index) => {
+    Object.entries(poolContainers)
+        .forEach(([poolName, elementId]) => {
 
-            document.getElementById("pool2Teams")
-                .innerHTML += `
-                    <div class="pool-team">
-                        <span>${index + 1}</span>
-                        ${team}
-                    </div>
-                `;
-
-        });
+            const container =
+                document.getElementById(elementId);
 
 
-    tournamentData.pools["Pool 3"]
-        .forEach((team, index) => {
+            container.innerHTML = "";
 
-            document.getElementById("pool3Teams")
-                .innerHTML += `
-                    <div class="pool-team">
-                        <span>${index + 1}</span>
-                        ${team}
-                    </div>
-                `;
+
+            tournamentData.pools[poolName]
+                .forEach((team, index) => {
+
+                    container.innerHTML += `
+                        <div class="pool-team">
+                            <span>${index + 1}</span>
+                            ${team}
+                        </div>
+                    `;
+
+                });
 
         });
 
 }
 
 
-/* FIXTURES */
+/* =========================================================
+   FIXTURES
+========================================================= */
 
 function updateFixtures() {
 
     const container =
-        document.getElementById("fixturesContainer");
+        document.getElementById(
+            "fixturesContainer"
+        );
+
 
     container.innerHTML = "";
 
 
     tournamentData.matches
-        .filter(match =>
-            match.stage.startsWith("Pool")
+        .filter(
+            match =>
+                match.stage.startsWith("Pool")
         )
         .forEach(match => {
 
             let score = "VS";
 
-            if (match.status === "finished") {
+
+            if (
+                match.status === "finished"
+                || match.status === "live"
+            ) {
 
                 score =
                     `${match.setsA} - ${match.setsB}`;
@@ -575,10 +758,8 @@ function updateFixtures() {
                 <div class="match-row">
 
                     <div class="match-stage">
-
                         ${match.stage}
                         • Match ${match.id}
-
                     </div>
 
 
@@ -586,16 +767,17 @@ function updateFixtures() {
 
                         ${match.teamA}
 
-                        <b>
-                            ${score}
-                        </b>
+                        <b>${score}</b>
 
                         ${match.teamB}
 
                     </div>
 
 
-                    <div class="match-status ${match.status}">
+                    <div class="
+                        match-status
+                        ${match.status}
+                    ">
 
                         ${match.status.toUpperCase()}
 
@@ -610,7 +792,9 @@ function updateFixtures() {
 }
 
 
-/* STANDINGS */
+/* =========================================================
+   STANDINGS
+========================================================= */
 
 function calculateStandings(poolName) {
 
@@ -618,73 +802,79 @@ function calculateStandings(poolName) {
         tournamentData.pools[poolName];
 
 
-    let table = teams.map(team => ({
+    const table =
+        teams.map(team => ({
 
-        team,
+            team,
 
-        played: 0,
+            played: 0,
+            won: 0,
+            lost: 0,
 
-        won: 0,
+            setsFor: 0,
+            setsAgainst: 0,
 
-        lost: 0,
+            pointsFor: 0,
+            pointsAgainst: 0
 
-        setsFor: 0,
-
-        setsAgainst: 0,
-
-        pointsFor: 0,
-
-        pointsAgainst: 0
-
-    }));
+        }));
 
 
-    const matches =
+    const completedMatches =
         tournamentData.matches.filter(
             match =>
-                match.stage === poolName &&
-                match.status === "finished"
+                match.stage === poolName
+                && match.status === "finished"
         );
 
 
-    matches.forEach(match => {
+    completedMatches.forEach(match => {
 
         const teamA =
-            table.find(t =>
-                t.team === match.teamA
+            table.find(
+                team =>
+                    team.team === match.teamA
             );
 
+
         const teamB =
-            table.find(t =>
-                t.team === match.teamB
+            table.find(
+                team =>
+                    team.team === match.teamB
             );
+
+
+        if (!teamA || !teamB) return;
 
 
         teamA.played++;
-
         teamB.played++;
 
 
-        teamA.setsFor += match.setsA;
+        teamA.setsFor +=
+            match.setsA;
 
-        teamA.setsAgainst += match.setsB;
-
-
-        teamB.setsFor += match.setsB;
-
-        teamB.setsAgainst += match.setsA;
+        teamA.setsAgainst +=
+            match.setsB;
 
 
-        if (match.winner === match.teamA) {
+        teamB.setsFor +=
+            match.setsB;
+
+        teamB.setsAgainst +=
+            match.setsA;
+
+
+        if (
+            match.winner === match.teamA
+        ) {
 
             teamA.won++;
-
             teamB.lost++;
 
         } else {
 
             teamB.won++;
-
             teamA.lost++;
 
         }
@@ -693,11 +883,9 @@ function calculateStandings(poolName) {
         match.setHistory.forEach(set => {
 
             teamA.pointsFor += set.a;
-
             teamA.pointsAgainst += set.b;
 
             teamB.pointsFor += set.b;
-
             teamB.pointsAgainst += set.a;
 
         });
@@ -707,31 +895,60 @@ function calculateStandings(poolName) {
 
     table.sort((a, b) => {
 
-        if (b.won !== a.won)
+        if (b.won !== a.won) {
+
             return b.won - a.won;
 
+        }
 
-        const setDiffA =
+
+        const setDifferenceA =
             a.setsFor - a.setsAgainst;
 
-        const setDiffB =
+        const setDifferenceB =
             b.setsFor - b.setsAgainst;
 
-        if (setDiffB !== setDiffA)
-            return setDiffB - setDiffA;
+
+        if (
+            setDifferenceB
+            !==
+            setDifferenceA
+        ) {
+
+            return (
+                setDifferenceB
+                -
+                setDifferenceA
+            );
+
+        }
 
 
-        const pointDiffA =
+        const pointDifferenceA =
             a.pointsFor - a.pointsAgainst;
 
-        const pointDiffB =
+        const pointDifferenceB =
             b.pointsFor - b.pointsAgainst;
 
-        if (pointDiffB !== pointDiffA)
-            return pointDiffB - pointDiffA;
+
+        if (
+            pointDifferenceB
+            !==
+            pointDifferenceA
+        ) {
+
+            return (
+                pointDifferenceB
+                -
+                pointDifferenceA
+            );
+
+        }
 
 
-        return a.team.localeCompare(b.team);
+        return a.team.localeCompare(
+            b.team
+        );
 
     });
 
@@ -744,20 +961,27 @@ function calculateStandings(poolName) {
 function updateStandings() {
 
     const container =
-        document.getElementById("standingsContainer");
+        document.getElementById(
+            "standingsContainer"
+        );
+
 
     container.innerHTML = "";
 
 
-    ["Pool 1", "Pool 2", "Pool 3"]
-        .forEach(pool => {
+    [
+        "Pool 1",
+        "Pool 2",
+        "Pool 3"
+    ]
+        .forEach(poolName => {
 
             const table =
-                calculateStandings(pool);
+                calculateStandings(poolName);
 
 
-            const qualify =
-                pool === "Pool 1"
+            const qualificationText =
+                poolName === "Pool 1"
                     ? "🏆 Top 2 Qualify"
                     : "🏆 Top 1 Qualifies";
 
@@ -765,42 +989,65 @@ function updateStandings() {
             let rows = "";
 
 
-            table.forEach((team, index) => {
+            table.forEach(
+                (team, index) => {
 
-                rows += `
+                    rows += `
 
-                    <tr>
+                        <tr>
 
-                        <td>${index + 1}</td>
+                            <td>
+                                ${index + 1}
+                            </td>
 
-                        <td>${team.team}</td>
+                            <td>
+                                ${team.team}
+                            </td>
 
-                        <td>${team.played}</td>
+                            <td>
+                                ${team.played}
+                            </td>
 
-                        <td>${team.won}</td>
+                            <td>
+                                ${team.won}
+                            </td>
 
-                        <td>${team.lost}</td>
+                            <td>
+                                ${team.lost}
+                            </td>
 
-                        <td>
-                            ${team.setsFor - team.setsAgainst}
-                        </td>
+                            <td>
+                                ${
+                                    team.setsFor
+                                    -
+                                    team.setsAgainst
+                                }
+                            </td>
 
-                        <td>
-                            ${team.pointsFor - team.pointsAgainst}
-                        </td>
+                            <td>
+                                ${
+                                    team.pointsFor
+                                    -
+                                    team.pointsAgainst
+                                }
+                            </td>
 
-                    </tr>
+                        </tr>
 
-                `;
+                    `;
 
-            });
+                }
+            );
 
 
             container.innerHTML += `
 
                 <div class="standing-card">
 
-                    <h2>${pool}</h2>
+                    <h2>
+                        ${poolName}
+                    </h2>
+
 
                     <table>
 
@@ -809,17 +1056,11 @@ function updateStandings() {
                             <tr>
 
                                 <th>#</th>
-
                                 <th>Team</th>
-
                                 <th>P</th>
-
                                 <th>W</th>
-
                                 <th>L</th>
-
                                 <th>Set +/-</th>
-
                                 <th>Point +/-</th>
 
                             </tr>
@@ -838,7 +1079,7 @@ function updateStandings() {
 
                     <p class="qualify-text">
 
-                        ${qualify}
+                        ${qualificationText}
 
                     </p>
 
@@ -851,26 +1092,37 @@ function updateStandings() {
 }
 
 
-/* KNOCKOUT */
+/* =========================================================
+   KNOCKOUT
+========================================================= */
 
 function updateKnockout() {
 
     const container =
-        document.getElementById("knockoutContainer");
+        document.getElementById(
+            "knockoutContainer"
+        );
+
 
     container.innerHTML = "";
 
 
     tournamentData.matches
-        .filter(match =>
-            match.stage === "Semi Final" ||
-            match.stage === "Final"
+        .filter(
+            match =>
+                match.stage === "Semi Final"
+                ||
+                match.stage === "Final"
         )
         .forEach(match => {
 
             let score = "VS";
 
-            if (match.status === "finished") {
+
+            if (
+                match.status === "finished"
+                || match.status === "live"
+            ) {
 
                 score =
                     `${match.setsA} - ${match.setsB}`;
@@ -893,16 +1145,17 @@ function updateKnockout() {
 
                         ${match.teamA}
 
-                        <b>
-                            ${score}
-                        </b>
+                        <b>${score}</b>
 
                         ${match.teamB}
 
                     </div>
 
 
-                    <div class="match-status">
+                    <div class="
+                        match-status
+                        ${match.status}
+                    ">
 
                         ${match.status.toUpperCase()}
 
@@ -917,20 +1170,22 @@ function updateKnockout() {
 }
 
 
-/* RESET */
+/* =========================================================
+   RESET TOURNAMENT
+========================================================= */
 
 async function resetTournament() {
 
-    const confirmReset =
+    const confirmed =
         confirm(
             "Are you sure you want to reset the entire tournament?"
         );
 
 
-    if (!confirmReset) return;
+    if (!confirmed) return;
 
 
-    await fetch(
+    const response = await fetch(
         "/api/reset",
         {
             method: "POST"
@@ -938,52 +1193,49 @@ async function resetTournament() {
     );
 
 
-    selectedMatchId = 1;
+    const result =
+        await response.json();
+
+
+    if (!response.ok) {
+
+        alert(
+            result.error
+            || "Could not reset tournament."
+        );
+
+        return;
+
+    }
+
+
+    selectedMatchId = null;
 
 
     await loadData();
 
 }
-async function logoutAdmin() {
-
-    await fetch(
-        "/api/admin/logout",
-        {
-            method: "POST"
-        }
-    );
-
-    isAdmin = false;
 
 
-    document
-        .getElementById("adminPanel")
-        .classList.add("hidden");
+/* =========================================================
+   INITIALIZATION
+========================================================= */
 
+async function initializeApp() {
 
-    document
-        .getElementById("adminButton")
-        .textContent =
-        "🔐 ADMIN LOGIN";
+    await checkAdminStatus();
 
-
-    alert("Logged out successfully");
+    await loadData();
 
 }
 
 
-/* AUTO REFRESH */
-
-/* CHECK LOGIN SESSION */
-
-checkAdminStatus();
+initializeApp();
 
 
-/* AUTO REFRESH DATA */
+/* Refresh live data every 3 seconds */
 
-setInterval(loadData, 3000);
-
-
-/* INITIAL LOAD */
-
-loadData();
+setInterval(
+    loadData,
+    3000
+);

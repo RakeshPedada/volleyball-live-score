@@ -2,113 +2,208 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Volleyball Tournament Live Score</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>
+        Volleyball Tournament Live Score
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
 </head>
 
+
 <body>
+
+
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
 
     <header>
 
         <div class="logo">
-            <div class="ball">🏐</div>
+
+            <div class="ball">
+                🏐
+            </div>
 
             <div>
-                <h1>VOLLEYBALL <span>TOURNAMENT</span></h1>
-                <p>LIVE SCORE • POOLS • KNOCKOUTS</p>
+
+                <h1>
+                    VOLLEYBALL
+                    <span>TOURNAMENT</span>
+                </h1>
+
+                <p>
+                    LIVE SCORE • POOLS • KNOCKOUTS
+                </p>
+
             </div>
+
         </div>
-            <button id="adminButton" onclick="openAdminLogin()">
-                🔐 ADMIN LOGIN
-            </button>
+
+
+        <button
+            id="adminButton"
+            onclick="openAdminLogin()"
+        >
+            🔐 ADMIN LOGIN
+        </button>
 
     </header>
 
 
-    <!-- NAVIGATION -->
+    <!-- =====================================================
+         NAVIGATION
+    ====================================================== -->
 
     <nav>
 
-        <button class="nav-btn active" onclick="showPage('live', this)">
+        <button
+            class="nav-btn active"
+            onclick="showPage('live', this)"
+        >
             🔴 LIVE
         </button>
 
-        <button class="nav-btn" onclick="showPage('fixtures', this)">
+
+        <button
+            class="nav-btn"
+            onclick="showPage('fixtures', this)"
+        >
             📅 FIXTURES
         </button>
 
-        <button class="nav-btn" onclick="showPage('standings', this)">
+
+        <button
+            class="nav-btn"
+            onclick="showPage('standings', this)"
+        >
             📊 STANDINGS
         </button>
 
-        <button class="nav-btn" onclick="showPage('knockout', this)">
+
+        <button
+            class="nav-btn"
+            onclick="showPage('knockout', this)"
+        >
             🏆 KNOCKOUT
         </button>
 
     </nav>
 
 
-    <!-- ADMIN PANEL -->
+    <!-- =====================================================
+         ADMIN PANEL
+    ====================================================== -->
 
-    <section id="adminPanel" class="admin-panel hidden">
+    <section
+        id="adminPanel"
+        class="admin-panel hidden"
+    >
 
         <div class="admin-header">
 
-    <h2>⚙ ADMIN SCORING PANEL</h2>
+            <h2>
+                ⚙ ADMIN SCORING PANEL
+            </h2>
 
-    <button class="logout-btn" onclick="logoutAdmin()">
-        🚪 LOGOUT
-    </button>
 
-</div>
+            <button
+                class="logout-btn"
+                onclick="logoutAdmin()"
+            >
+                🚪 LOGOUT
+            </button>
+
+        </div>
+
 
         <div class="admin-top">
 
             <select id="matchSelect"></select>
 
-            <button onclick="startSelectedMatch()">
+
+            <button
+                onclick="startSelectedMatch()"
+            >
                 ▶ START MATCH
             </button>
 
-            <button class="reset-btn" onclick="resetTournament()">
+
+            <button
+                class="reset-btn"
+                onclick="resetTournament()"
+            >
                 RESET TOURNAMENT
             </button>
 
         </div>
 
 
-        <div id="adminScoreControls" class="admin-score-controls">
+        <!-- SCORE CONTROLS -->
+
+        <div
+            id="adminScoreControls"
+            class="admin-score-controls"
+        >
+
+
+            <!-- TEAM A -->
 
             <div class="score-team">
 
-                <h3 id="adminTeamA">TEAM A</h3>
+                <h3 id="adminTeamA">
+                    TEAM A
+                </h3>
 
-                <div id="adminScoreA" class="admin-score">
+
+                <div
+                    id="adminScoreA"
+                    class="admin-score"
+                >
                     0
                 </div>
+
 
                 <button onclick="addPoint('A')">
                     +1 POINT
                 </button>
 
-                <button class="undo" onclick="undoPoint('A')">
+
+                <button
+                    class="undo"
+                    onclick="undoPoint('A')"
+                >
                     ↩ UNDO
                 </button>
 
             </div>
 
 
+            <!-- SET SCORE -->
+
             <div class="sets-box">
 
-                <div>SETS</div>
+                <div>
+                    SETS
+                </div>
+
 
                 <strong id="adminSets">
                     0 - 0
                 </strong>
+
 
                 <small id="targetText">
                     Target: 25
@@ -117,19 +212,32 @@
             </div>
 
 
+            <!-- TEAM B -->
+
             <div class="score-team">
 
-                <h3 id="adminTeamB">TEAM B</h3>
+                <h3 id="adminTeamB">
+                    TEAM B
+                </h3>
 
-                <div id="adminScoreB" class="admin-score">
+
+                <div
+                    id="adminScoreB"
+                    class="admin-score"
+                >
                     0
                 </div>
+
 
                 <button onclick="addPoint('B')">
                     +1 POINT
                 </button>
 
-                <button class="undo" onclick="undoPoint('B')">
+
+                <button
+                    class="undo"
+                    onclick="undoPoint('B')"
+                >
                     ↩ UNDO
                 </button>
 
@@ -137,30 +245,43 @@
 
         </div>
 
+
         <p class="admin-note">
-            Best of 3 Sets • Sets 1 & 2: 25 Points • Deciding Set: 15 Points • 2 Point Lead Required
+
+            Best of 3 Sets •
+            Sets 1 & 2: Minimum 25 Points •
+            Deciding Set: Minimum 15 Points •
+            2 Point Lead Required
+
         </p>
 
     </section>
 
 
+    <!-- =====================================================
+         LIVE PAGE
+    ====================================================== -->
 
-    <!-- LIVE PAGE -->
-
-    <main id="livePage" class="page">
+    <main
+        id="livePage"
+        class="page"
+    >
 
         <section class="live-section">
 
-            <div id="liveStatus" class="live-status">
+            <div
+                id="liveStatus"
+                class="live-status"
+            >
                 ⏳ NO MATCH LIVE
             </div>
+
 
             <div id="liveScoreContainer">
 
                 <div class="no-live">
 
-                    Select a match from the Admin Panel and press
-                    <b>START MATCH</b>.
+                    No match is currently live.
 
                 </div>
 
@@ -169,11 +290,16 @@
         </section>
 
 
+        <!-- POOL OVERVIEW -->
+
         <section class="pool-overview">
+
 
             <div class="pool-card">
 
-                <h2>POOL 1</h2>
+                <h2>
+                    POOL 1
+                </h2>
 
                 <div id="pool1Teams"></div>
 
@@ -182,7 +308,9 @@
 
             <div class="pool-card">
 
-                <h2>POOL 2</h2>
+                <h2>
+                    POOL 2
+                </h2>
 
                 <div id="pool2Teams"></div>
 
@@ -191,7 +319,9 @@
 
             <div class="pool-card">
 
-                <h2>POOL 3</h2>
+                <h2>
+                    POOL 3
+                </h2>
 
                 <div id="pool3Teams"></div>
 
@@ -202,48 +332,66 @@
     </main>
 
 
+    <!-- =====================================================
+         FIXTURES PAGE
+    ====================================================== -->
 
-    <!-- FIXTURES PAGE -->
-
-    <main id="fixturesPage" class="page hidden">
+    <main
+        id="fixturesPage"
+        class="page hidden"
+    >
 
         <h2 class="page-title">
             📅 LEAGUE FIXTURES
         </h2>
+
 
         <div id="fixturesContainer"></div>
 
     </main>
 
 
+    <!-- =====================================================
+         STANDINGS PAGE
+    ====================================================== -->
 
-    <!-- STANDINGS PAGE -->
-
-    <main id="standingsPage" class="page hidden">
+    <main
+        id="standingsPage"
+        class="page hidden"
+    >
 
         <h2 class="page-title">
             📊 POOL STANDINGS
         </h2>
+
 
         <div id="standingsContainer"></div>
 
     </main>
 
 
+    <!-- =====================================================
+         KNOCKOUT PAGE
+    ====================================================== -->
 
-    <!-- KNOCKOUT PAGE -->
-
-    <main id="knockoutPage" class="page hidden">
+    <main
+        id="knockoutPage"
+        class="page hidden"
+    >
 
         <h2 class="page-title">
             🏆 KNOCKOUT STAGE
         </h2>
+
 
         <div id="knockoutContainer"></div>
 
     </main>
 
 
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
 
     <footer>
 
@@ -252,34 +400,74 @@
     </footer>
 
 
-<!-- ADMIN LOGIN MODAL -->
+    <!-- =====================================================
+         ADMIN LOGIN MODAL
+    ====================================================== -->
 
-<div id="loginModal" class="login-modal hidden">
+    <div
+        id="loginModal"
+        class="login-modal hidden"
+    >
 
-    <div class="login-box">
+        <div class="login-box">
 
-        <button class="close-login" onclick="closeAdminLogin()">✕</button>
+            <button
+                class="close-login"
+                onclick="closeAdminLogin()"
+            >
+                ✕
+            </button>
 
-        <h2>🔐 Admin Login</h2>
 
-        <p>Only authorized tournament administrators can access scoring.</p>
+            <h2>
+                🔐 Admin Login
+            </h2>
 
-        <input type="text" id="adminUsername" placeholder="Username">
 
-        <input type="password" id="adminPassword" placeholder="Password">
+            <p>
+                Only authorized tournament administrators
+                can access scoring.
+            </p>
 
-        <button class="login-submit" onclick="loginAdmin()">
-            LOGIN
-        </button>
 
-        <p id="loginError" class="login-error"></p>
+            <input
+                type="text"
+                id="adminUsername"
+                placeholder="Username"
+                autocomplete="username"
+            >
+
+
+            <input
+                type="password"
+                id="adminPassword"
+                placeholder="Password"
+                autocomplete="current-password"
+            >
+
+
+            <button
+                class="login-submit"
+                onclick="loginAdmin()"
+            >
+                LOGIN
+            </button>
+
+
+            <p
+                id="loginError"
+                class="login-error"
+            ></p>
+
+        </div>
 
     </div>
 
-</div>
 
+    <script
+        src="{{ url_for('static', filename='script.js') }}"
+    ></script>
 
-<script src="{{ url_for('static', filename='script.js') }}"></script>
 
 </body>
 
