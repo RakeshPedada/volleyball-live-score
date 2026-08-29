@@ -1040,6 +1040,125 @@ def force_reset_fixtures():
         "supabase_saved": bool(result.data is not None)
     })
 
+@app.route("/api/update-day-one-fixtures", methods=["POST"])
+
+def update_day_one_fixtures():
+
+    global matches
+
+    fixtures = [
+        {
+            "teamA": "Zenith",
+            "teamB": "Net Warriors",
+            "date": "30 August 2026",
+            "time": "5:00 – 5:45 AM",
+            "session": "Morning Session"
+        },
+        {
+            "teamA": "Spike Force",
+            "teamB": "Null Scapes",
+            "date": "30 August 2026",
+            "time": "5:50 – 6:30 AM",
+            "session": "Morning Session"
+        },
+        {
+            "teamA": "Zenith",
+            "teamB": "Avengers",
+            "date": "30 August 2026",
+            "time": "6:40 – 7:15 AM",
+            "session": "Morning Session"
+        },
+        {
+            "teamA": "Mahua Boyz",
+            "teamB": "Predators",
+            "date": "30 August 2026",
+            "time": "7:20 – 8:00 AM",
+            "session": "Morning Session"
+        },
+        {
+            "teamA": "Avengers",
+            "teamB": "Apex",
+            "date": "30 August 2026",
+            "time": "8:05 – 8:45 AM",
+            "session": "Morning Session"
+        },
+        {
+            "teamA": "Dominators",
+            "teamB": "Predators",
+            "date": "30 August 2026",
+            "time": "8:50 – 9:30 AM",
+            "session": "Morning Session"
+        },
+        {
+            "teamA": "Dominators",
+            "teamB": "Mahua Boyz",
+            "date": "30 August 2026",
+            "time": "3:00 – 3:45 PM",
+            "session": "Evening Session"
+        },
+        {
+            "teamA": "Apex",
+            "teamB": "Net Warriors",
+            "date": "30 August 2026",
+            "time": "3:50 – 4:30 PM",
+            "session": "Evening Session"
+        },
+        {
+            "teamA": "Avengers",
+            "teamB": "Net Warriors",
+            "date": "30 August 2026",
+            "time": "4:40 – 5:40 PM",
+            "session": "Evening Session"
+        }
+    ]
+
+    updated_matches = []
+
+    for fixture in fixtures:
+
+        for match in matches:
+
+            teams_match = (
+                {match["teamA"], match["teamB"]}
+                ==
+                {fixture["teamA"], fixture["teamB"]}
+            )
+
+            if teams_match:
+
+                # SAFETY: Never overwrite matches already played
+                if match["status"] != "upcoming":
+
+                    return jsonify({
+                        "error": (
+                            f'Match {match["teamA"]} vs '
+                            f'{match["teamB"]} has already started/finished.'
+                        )
+                    }), 400
+
+
+                # Only update schedule information
+                match["date"] = fixture["date"]
+                match["time"] = fixture["time"]
+                match["session"] = fixture["session"]
+
+                updated_matches.append(
+                    f'{match["teamA"]} vs {match["teamB"]}'
+                )
+
+                break
+
+
+    # Save updated data to Supabase
+    save_tournament_state()
+
+
+    return jsonify({
+        "success": True,
+        "message": "Day 1 fixtures updated safely",
+        "updated": updated_matches
+    })
+
 if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
