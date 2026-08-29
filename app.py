@@ -417,14 +417,14 @@ def save_tournament_state():
         "matches": matches
     }
 
+    # upsert guarantees that row id=1 is created or replaced
+    # with the latest tournament state.
     result = supabase.table(
         "tournament_state"
-    ).update({
+    ).upsert({
+        "id": 1,
         "data": tournament_state
-    }).eq(
-        "id",
-        1
-    ).execute()
+    }, on_conflict="id").execute()
 
     return result
 
@@ -892,33 +892,24 @@ def reset_tournament():
 # =========================================================
 @app.route(
     "/api/force-reset-fixtures",
-    methods=["GET"]
+    methods=["GET", "POST"]
 )
 def force_reset_fixtures():
-
+    """Replace the persisted Supabase fixtures with the current code fixtures."""
     global matches
 
     matches = create_matches()
+    result = save_tournament_state()
 
-    tournament_state = {
-        "pools": pools,
-        "matches": matches
-    }
-
-    supabase.table(
-        "tournament_state"
-    ).update({
-        "data": tournament_state
-    }).eq(
-        "id",
-        1
-    ).execute()
+    print("FIXTURES REPLACED IN SUPABASE")
+    print("Total matches:", len(matches))
 
     return jsonify({
         "success": True,
-        "message": "Fixtures forcefully updated",
+        "message": "Supabase fixtures replaced successfully",
         "total_matches": len(matches),
-        "matches": matches
+        "matches": matches,
+        "supabase_saved": bool(result.data is not None)
     })
 
 if __name__ == "__main__":
