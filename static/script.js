@@ -720,196 +720,162 @@ function updatePools() {
 /* =========================================================
    FIXTURES
 ========================================================= */
+/* FIXTURES */
 
 function updateFixtures() {
 
     const container =
-        document.getElementById(
-            "fixturesContainer"
-        );
+        document.getElementById("fixturesContainer");
 
     container.innerHTML = "";
 
 
     const poolMatches =
         tournamentData.matches.filter(
-            match =>
-                match.stage.startsWith("Pool")
+            match => match.stage.startsWith("Pool")
         );
 
 
-    // Group matches:
-    // Date → Session → Matches
+    // =====================================================
+    // GROUP MATCHES BY DATE AND SESSION
+    // =====================================================
 
-    const grouped = {};
+    const groupedFixtures = {};
 
 
     poolMatches.forEach(match => {
 
         const date =
-            match.date || "Date To Be Announced";
-
+            match.date || "Later Fixtures";
 
         const session =
-            match.session || "Session To Be Announced";
+            match.session || "Schedule To Be Announced";
 
 
-        if (!grouped[date]) {
+        if (!groupedFixtures[date]) {
 
-            grouped[date] = {};
-
-        }
-
-
-        if (!grouped[date][session]) {
-
-            grouped[date][session] = [];
+            groupedFixtures[date] = {};
 
         }
 
 
-        grouped[date][session].push(match);
+        if (!groupedFixtures[date][session]) {
+
+            groupedFixtures[date][session] = [];
+
+        }
+
+
+        groupedFixtures[date][session].push(match);
 
     });
 
 
-    // Display Date
+    // =====================================================
+    // DISPLAY FIXTURES
+    // =====================================================
 
-    Object.entries(grouped)
-        .forEach(([date, sessions]) => {
+    Object.keys(groupedFixtures).forEach(date => {
 
+        container.innerHTML += `
+
+            <div class="fixture-date">
+
+                <h2>📅 ${date}</h2>
+
+            </div>
+
+        `;
+
+
+        Object.keys(groupedFixtures[date]).forEach(session => {
 
             container.innerHTML += `
 
-                <div class="fixture-date-heading">
+                <div class="fixture-session">
 
-                    📅 ${date}
+                    <h3>
+
+                        ${session === "Morning Session"
+                            ? "🌅 Morning Session"
+                            : session === "Evening Session"
+                            ? "🌆 Evening Session"
+                            : "📌 " + session
+                        }
+
+                    </h3>
 
                 </div>
 
             `;
 
 
-            // Display Session
+            groupedFixtures[date][session]
 
-            Object.entries(sessions)
-                .forEach(
-                    ([session, sessionMatches]) => {
+                .forEach(match => {
 
 
-                        let sessionIcon = "📌";
+                    let score = "VS";
 
 
-                        if (
-                            session
-                                .toLowerCase()
-                                .includes("morning")
-                        ) {
+                    if (match.status === "finished") {
 
-                            sessionIcon = "🌅";
+                        score =
+                            `${match.setsA} - ${match.setsB}`;
 
-                        }
+                    }
 
 
-                        else if (
-                            session
-                                .toLowerCase()
-                                .includes("evening")
-                        ) {
-
-                            sessionIcon = "🌆";
-
-                        }
+                    let time = match.time || "TBA";
 
 
-                        container.innerHTML += `
+                    container.innerHTML += `
 
-                            <div class="fixture-session-heading">
+                        <div class="match-row">
 
-                                ${sessionIcon} ${session}
+                            <div class="match-stage">
+
+                                ${match.stage}
+                                • Match ${match.id}
 
                             </div>
 
-                        `;
+
+                            <div class="match-time">
+
+                                ⏰ ${time}
+
+                            </div>
 
 
-                        // Display Matches
+                            <div class="match-teams">
 
-                        sessionMatches.forEach(match => {
+                                ${match.teamA}
 
+                                <b>
+                                    ${score}
+                                </b>
 
-                            let score = "VS";
+                                ${match.teamB}
 
-
-                            if (
-                                match.status === "finished"
-                                ||
-                                match.status === "live"
-                            ) {
-
-                                score =
-                                    `${match.setsA} - ${match.setsB}`;
-
-                            }
+                            </div>
 
 
-                            const time =
-                                match.time
-                                ||
-                                "Time To Be Announced";
+                            <div class="match-status ${match.status}">
 
+                                ${match.status.toUpperCase()}
 
-                            container.innerHTML += `
+                            </div>
 
-                                <div class="match-row">
+                        </div>
 
+                    `;
 
-                                    <div class="match-stage">
-
-                                        ${match.stage}
-                                        • Match ${match.id}
-
-                                    </div>
-
-
-                                    <div class="fixture-time">
-
-                                        ⏰ ${time}
-
-                                    </div>
-
-
-                                    <div class="match-teams">
-
-                                        ${match.teamA}
-
-                                        <b>${score}</b>
-
-                                        ${match.teamB}
-
-                                    </div>
-
-
-                                    <div class="
-                                        match-status
-                                        ${match.status}
-                                    ">
-
-                                        ${match.status.toUpperCase()}
-
-                                    </div>
-
-
-                                </div>
-
-                            `;
-
-                        });
-
-                    }
-                );
+                });
 
         });
+
+    });
 
 }
 /* =========================================================
