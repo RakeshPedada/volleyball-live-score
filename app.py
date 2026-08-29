@@ -1,5 +1,6 @@
 import os
 from functools import wraps
+from itertools import combinations
 
 from flask import Flask, render_template, jsonify, request, session
 from supabase import create_client
@@ -109,7 +110,9 @@ def create_match(
     team_a,
     team_b,
     status="upcoming",
-    label=None
+    label=None,
+    match_time=None,
+    session_name=None
 ):
 
     return {
@@ -121,6 +124,9 @@ def create_match(
         "teamB": team_b,
 
         "status": status,
+
+        "time": match_time,
+        "session": session_name,
 
         "scoreA": 0,
         "scoreB": 0,
@@ -134,39 +140,229 @@ def create_match(
     }
 
 
+# =========================================================
+# CREATE COMPLETE TOURNAMENT FIXTURES
+# =========================================================
+
 def create_matches():
 
     tournament_matches = []
 
     match_id = 1
 
-    # -----------------------------------------------------
-    # POOL MATCHES
-    # -----------------------------------------------------
 
-    for pool_name, teams in pools.items():
+    # =====================================================
+    # DAY 1 - MORNING SESSION
+    # =====================================================
 
-        for i in range(len(teams)):
+    day_one_fixtures = [
 
-            for j in range(i + 1, len(teams)):
+        (
+            "Pool 2",
+            "Zenith",
+            "Net Warriors",
+            "5:00 – 5:45 AM",
+            "Morning Session"
+        ),
 
-                tournament_matches.append(
-                    create_match(
-                        match_id,
-                        pool_name,
-                        teams[i],
-                        teams[j]
-                    )
+        (
+            "Pool 3",
+            "Spike Force",
+            "Null Scapes",
+            "5:50 – 6:30 AM",
+            "Morning Session"
+        ),
+
+        (
+            "Pool 2",
+            "Zenith",
+            "Avengers",
+            "6:40 – 7:15 AM",
+            "Morning Session"
+        ),
+
+        (
+            "Pool 1",
+            "Mahua Boyz",
+            "Predators",
+            "7:20 – 8:00 AM",
+            "Morning Session"
+        ),
+
+        (
+            "Pool 2",
+            "Avengers",
+            "Apex",
+            "8:05 – 8:45 AM",
+            "Morning Session"
+        ),
+
+        (
+            "Pool 1",
+            "Dominators",
+            "Predators",
+            "8:50 – 9:30 AM",
+            "Morning Session"
+        ),
+
+
+        # =================================================
+        # DAY 1 - EVENING SESSION
+        # =================================================
+
+        (
+            "Pool 1",
+            "Dominators",
+            "Mahua Boyz",
+            "3:00 – 3:45 PM",
+            "Evening Session"
+        ),
+
+        (
+            "Pool 2",
+            "Apex",
+            "Net Warriors",
+            "3:50 – 4:30 PM",
+            "Evening Session"
+        ),
+
+        (
+            "Pool 2",
+            "Avengers",
+            "Net Warriors",
+            "4:40 – 5:40 PM",
+            "Evening Session"
+        )
+    ]
+
+
+    # Add Day 1 fixtures first
+
+    scheduled_pairs = set()
+
+    for (
+        stage,
+        team_a,
+        team_b,
+        match_time,
+        session_name
+    ) in day_one_fixtures:
+
+        tournament_matches.append(
+
+            create_match(
+                match_id,
+                stage,
+                team_a,
+                team_b,
+                match_time=match_time,
+                session_name=session_name
+            )
+        )
+
+        scheduled_pairs.add(
+            tuple(sorted([team_a, team_b]))
+        )
+
+        match_id += 1
+
+
+    # =====================================================
+    # ADD REMAINING POOL 1 MATCHES
+    # =====================================================
+
+    for team_a, team_b in combinations(
+        pools["Pool 1"],
+        2
+    ):
+
+        pair = tuple(
+            sorted([team_a, team_b])
+        )
+
+        if pair not in scheduled_pairs:
+
+            tournament_matches.append(
+
+                create_match(
+                    match_id,
+                    "Pool 1",
+                    team_a,
+                    team_b,
+                    match_time=None,
+                    session_name="Later Fixtures"
                 )
+            )
 
-                match_id += 1
+            match_id += 1
 
 
-    # -----------------------------------------------------
-    # SEMI FINAL 1
-    # -----------------------------------------------------
+    # =====================================================
+    # ADD REMAINING POOL 2 MATCHES
+    # =====================================================
+
+    for team_a, team_b in combinations(
+        pools["Pool 2"],
+        2
+    ):
+
+        pair = tuple(
+            sorted([team_a, team_b])
+        )
+
+        if pair not in scheduled_pairs:
+
+            tournament_matches.append(
+
+                create_match(
+                    match_id,
+                    "Pool 2",
+                    team_a,
+                    team_b,
+                    match_time=None,
+                    session_name="Later Fixtures"
+                )
+            )
+
+            match_id += 1
+
+
+    # =====================================================
+    # ADD REMAINING POOL 3 MATCHES
+    # =====================================================
+
+    for team_a, team_b in combinations(
+        pools["Pool 3"],
+        2
+    ):
+
+        pair = tuple(
+            sorted([team_a, team_b])
+        )
+
+        if pair not in scheduled_pairs:
+
+            tournament_matches.append(
+
+                create_match(
+                    match_id,
+                    "Pool 3",
+                    team_a,
+                    team_b,
+                    match_time=None,
+                    session_name="Later Fixtures"
+                )
+            )
+
+            match_id += 1
+
+
+    # =====================================================
+    # SEMI FINALS
+    # =====================================================
 
     tournament_matches.append(
+
         create_match(
             23,
             "Semi Final",
@@ -177,12 +373,8 @@ def create_matches():
         )
     )
 
-
-    # -----------------------------------------------------
-    # SEMI FINAL 2
-    # -----------------------------------------------------
-
     tournament_matches.append(
+
         create_match(
             24,
             "Semi Final",
@@ -194,11 +386,12 @@ def create_matches():
     )
 
 
-    # -----------------------------------------------------
+    # =====================================================
     # FINAL
-    # -----------------------------------------------------
+    # =====================================================
 
     tournament_matches.append(
+
         create_match(
             25,
             "Final",
@@ -224,7 +417,7 @@ def save_tournament_state():
         "matches": matches
     }
 
-    supabase.table(
+    result = supabase.table(
         "tournament_state"
     ).update({
         "data": tournament_state
@@ -232,6 +425,8 @@ def save_tournament_state():
         "id",
         1
     ).execute()
+
+    return result
 
 
 # =========================================================
@@ -317,11 +512,11 @@ def get_target_score(match):
 
     current_set = get_current_set_number(match)
 
-    # Set 3 uses 15 points
+    # Third / deciding set
     if current_set == 3:
         return 15
 
-    # Set 1 and Set 2 use 25 points
+    # Set 1 and Set 2
     return 25
 
 
@@ -347,15 +542,18 @@ def finish_current_set(match):
     score_a = match["scoreA"]
     score_b = match["scoreB"]
 
-    # Save completed set score
+    # Save completed set
+
     match["setHistory"].append({
         "a": score_a,
         "b": score_b
     })
 
     # Award set
+
     if score_a > score_b:
         match["setsA"] += 1
+
     else:
         match["setsB"] += 1
 
@@ -365,8 +563,11 @@ def finish_match(match):
     match["status"] = "finished"
 
     if match["setsA"] > match["setsB"]:
+
         match["winner"] = match["teamA"]
+
     else:
+
         match["winner"] = match["teamB"]
 
 
@@ -390,7 +591,10 @@ def home():
 # ADMIN LOGIN
 # =========================================================
 
-@app.route("/api/admin/login", methods=["POST"])
+@app.route(
+    "/api/admin/login",
+    methods=["POST"]
+)
 def admin_login():
 
     data = request.get_json()
@@ -401,8 +605,15 @@ def admin_login():
             "error": "Invalid request"
         }), 400
 
-    username = data.get("username", "")
-    password = data.get("password", "")
+    username = data.get(
+        "username",
+        ""
+    )
+
+    password = data.get(
+        "password",
+        ""
+    )
 
     if (
         username == ADMIN_USERNAME
@@ -425,7 +636,10 @@ def admin_login():
 # ADMIN LOGOUT
 # =========================================================
 
-@app.route("/api/admin/logout", methods=["POST"])
+@app.route(
+    "/api/admin/logout",
+    methods=["POST"]
+)
 def admin_logout():
 
     session.clear()
@@ -444,7 +658,10 @@ def admin_logout():
 def admin_status():
 
     return jsonify({
-        "is_admin": session.get("is_admin", False)
+        "is_admin": session.get(
+            "is_admin",
+            False
+        )
     })
 
 
@@ -465,7 +682,10 @@ def get_data():
 # START MATCH
 # =========================================================
 
-@app.route("/api/start/<int:match_id>", methods=["POST"])
+@app.route(
+    "/api/start/<int:match_id>",
+    methods=["POST"]
+)
 @admin_required
 def start_match(match_id):
 
@@ -491,6 +711,7 @@ def start_match(match_id):
 
 
     # Only one match can be live
+
     for other_match in matches:
 
         if (
@@ -568,15 +789,12 @@ def add_point(match_id, side):
 
             finish_match(match)
 
-
         else:
 
-            # Automatically begin next set
+            # Automatically start next set
 
             start_next_set(match)
 
-
-    # Save every score update
 
     save_tournament_state()
 
@@ -640,28 +858,70 @@ def undo_point(match_id, side):
 # RESET TOURNAMENT
 # =========================================================
 
-@app.route("/api/reset", methods=["POST"])
+@app.route(
+    "/api/reset",
+    methods=["POST"]
+)
 @admin_required
 def reset_tournament():
 
     global matches
 
+    # Recreate the COMPLETE tournament:
+    # 22 pool matches + 2 semi-finals + 1 final
+
     matches = create_matches()
 
-    save_tournament_state()
+    result = save_tournament_state()
+
+    print("====================================")
+    print("TOURNAMENT RESET COMPLETED")
+    print("Total matches:", len(matches))
+    print("Supabase result:", result.data)
+    print("====================================")
 
     return jsonify({
         "success": True,
-        "message": "Tournament reset successfully"
+        "message": "Tournament reset successfully",
+        "matches_count": len(matches)
     })
 
 
 # =========================================================
 # RUN APPLICATION
 # =========================================================
+@app.route(
+    "/api/force-reset-fixtures",
+    methods=["GET"]
+)
+def force_reset_fixtures():
+
+    global matches
+
+    matches = create_matches()
+
+    tournament_state = {
+        "pools": pools,
+        "matches": matches
+    }
+
+    supabase.table(
+        "tournament_state"
+    ).update({
+        "data": tournament_state
+    }).eq(
+        "id",
+        1
+    ).execute()
+
+    return jsonify({
+        "success": True,
+        "message": "Fixtures forcefully updated",
+        "total_matches": len(matches),
+        "matches": matches
+    })
 
 if __name__ == "__main__":
-
     app.run(
         host="0.0.0.0",
         port=5000,
