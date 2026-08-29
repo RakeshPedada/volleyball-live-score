@@ -1,10 +1,34 @@
 import os
 from functools import wraps
 
-from flask import Flask, jsonify, render_template, request, session
+from flask import Flask, render_template, jsonify, request, session
+from supabase import create_client
 
+
+# =========================================================
+# SUPABASE CONFIGURATION
+# =========================================================
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_SECRET_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError(
+        "SUPABASE_URL or SUPABASE_SECRET_KEY environment variable is missing."
+    )
+
+supabase = create_client(
+    SUPABASE_URL,
+    SUPABASE_KEY
+)
+
+
+# =========================================================
+# FLASK APPLICATION
+# =========================================================
 
 app = Flask(__name__)
+
 
 # =========================================================
 # SECURITY CONFIGURATION
@@ -36,6 +60,7 @@ def admin_required(function):
     def decorated_function(*args, **kwargs):
 
         if not session.get("is_admin"):
+
             return jsonify({
                 "error": "Admin authentication required"
             }), 401
@@ -184,10 +209,87 @@ def create_matches():
         )
     )
 
+
     return tournament_matches
 
 
-matches = create_matches()
+# =========================================================
+# SUPABASE SAVE
+# =========================================================
+
+def save_tournament_state():
+
+    tournament_state = {
+        "pools": pools,
+        "matches": matches
+    }
+
+    supabase.table(
+        "tournament_state"
+    ).update({
+        "data": tournament_state
+    }).eq(
+        "id",
+        1
+    ).execute()
+
+
+# =========================================================
+# SUPABASE LOAD
+# =========================================================
+
+def load_tournament_state():
+
+    result = supabase.table(
+        "tournament_state"
+    ).select(
+        "data"
+    ).eq(
+        "id",
+        1
+    ).execute()
+
+    if not result.data:
+        return None
+
+    data = result.data[0].get("data")
+
+    if not data:
+        return None
+
+    if "matches" not in data:
+        return None
+
+    return data
+
+
+# =========================================================
+# LOAD TOURNAMENT ON SERVER START
+# =========================================================
+
+saved_state = load_tournament_state()
+
+if saved_state:
+
+    pools = saved_state.get(
+        "pools",
+        pools
+    )
+
+    matches = saved_state.get(
+        "matches",
+        create_matches()
+    )
+
+    print("Tournament loaded from Supabase.")
+
+else:
+
+    matches = create_matches()
+
+    save_tournament_state()
+
+    print("New tournament created and saved to Supabase.")
 
 
 # =========================================================
@@ -208,7 +310,6 @@ def find_match(match_id):
 
 def get_current_set_number(match):
 
-    # Number of completed sets + current set
     return len(match["setHistory"]) + 1
 
 
@@ -216,11 +317,11 @@ def get_target_score(match):
 
     current_set = get_current_set_number(match)
 
-    # Set 1 and Set 2 -> 25
-    # Set 3 -> 15
+    # Set 3 uses 15 points
     if current_set == 3:
         return 15
 
+    # Set 1 and Set 2 use 25 points
     return 25
 
 
@@ -246,13 +347,13 @@ def finish_current_set(match):
     score_a = match["scoreA"]
     score_b = match["scoreB"]
 
-    # Save completed set
+    # Save completed set score
     match["setHistory"].append({
         "a": score_a,
         "b": score_b
     })
 
-    # Award the set
+    # Award set
     if score_a > score_b:
         match["setsA"] += 1
     else:
@@ -295,14 +396,13 @@ def admin_login():
     data = request.get_json()
 
     if not data:
+
         return jsonify({
             "error": "Invalid request"
         }), 400
 
-
     username = data.get("username", "")
     password = data.get("password", "")
-
 
     if (
         username == ADMIN_USERNAME
@@ -315,7 +415,6 @@ def admin_login():
             "success": True,
             "message": "Admin login successful"
         })
-
 
     return jsonify({
         "error": "Invalid username or password"
@@ -373,17 +472,16 @@ def start_match(match_id):
     match = find_match(match_id)
 
     if not match:
+
         return jsonify({
             "error": "Match not found"
         }), 404
-
 
     if match["status"] == "locked":
 
         return jsonify({
             "error": "Match is locked"
         }), 400
-
 
     if match["status"] == "finished":
 
@@ -392,17 +490,20 @@ def start_match(match_id):
         }), 400
 
 
-    # Only one match can be live at a time
+    # Only one match can be live
     for other_match in matches:
 
         if (
             other_match["status"] == "live"
             and other_match["id"] != match_id
         ):
+
             other_match["status"] = "upcoming"
 
 
     match["status"] = "live"
+
+    save_tournament_state()
 
     return jsonify(match)
 
@@ -434,9 +535,7 @@ def add_point(match_id, side):
         }), 400
 
 
-    # -----------------------------------------------------
-    # ADD POINT
-    # -----------------------------------------------------
+    # Add point
 
     if side == "A":
 
@@ -453,20 +552,14 @@ def add_point(match_id, side):
         }), 400
 
 
-    # -----------------------------------------------------
-    # CHECK WHETHER CURRENT SET HAS FINISHED
-    # -----------------------------------------------------
+    # Check whether set has finished
 
     if check_set_finished(match):
 
         finish_current_set(match)
 
 
-        # -------------------------------------------------
-        # MATCH FINISHED
-        # First team to win 2 sets wins.
-        # Maximum possible sets = 3.
-        # -------------------------------------------------
+        # First team to win 2 sets wins match
 
         if (
             match["setsA"] == 2
@@ -478,12 +571,14 @@ def add_point(match_id, side):
 
         else:
 
-            # ---------------------------------------------
-            # AUTOMATICALLY START NEXT SET
-            # ---------------------------------------------
+            # Automatically begin next set
 
             start_next_set(match)
 
+
+    # Save every score update
+
+    save_tournament_state()
 
     return jsonify(match)
 
@@ -536,6 +631,8 @@ def undo_point(match_id, side):
         }), 400
 
 
+    save_tournament_state()
+
     return jsonify(match)
 
 
@@ -550,6 +647,8 @@ def reset_tournament():
     global matches
 
     matches = create_matches()
+
+    save_tournament_state()
 
     return jsonify({
         "success": True,
