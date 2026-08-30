@@ -1528,48 +1528,33 @@ function updateKnockout() {
    RESET TOURNAMENT
 ========================================================= */
 async function setScoringFormat(format) {
-
     try {
-
         const response = await fetch("/api/scoring-format", {
-
             method: "POST",
-
             headers: {
                 "Content-Type": "application/json"
             },
-
             body: JSON.stringify({
                 scoring_format: format
             })
-
         });
-
 
         const result = await response.json();
 
-
         if (!response.ok) {
-
             alert(
                 result.error ||
                 "Could not update scoring format."
             );
-
             return;
-
         }
-
 
         tournamentData.scoring_format =
             result.scoring_format;
 
-
         updateEverything();
 
-
     } catch (error) {
-
         console.error(
             "Scoring format error:",
             error
@@ -1578,9 +1563,7 @@ async function setScoringFormat(format) {
         alert(
             "Network error while changing scoring format."
         );
-
     }
-
 }
 
 // Update local tournament data immediately
