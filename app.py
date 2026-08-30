@@ -69,8 +69,6 @@ def admin_required(function):
         return function(*args, **kwargs)
 
     return decorated_function
-
-
 # =========================================================
 # TOURNAMENT POOLS
 # =========================================================
@@ -96,10 +94,15 @@ pools = {
         "Null Scapes",
         "Spike Force",
         "PhD."
+    ],
+
+    "Women's Pool": [
+        "Team Rushh",
+        "Disciples",
+        "Femme Force",
+        "Velocity (A)"
     ]
 }
-
-
 # =========================================================
 # MATCH CREATION
 # =========================================================
@@ -140,8 +143,6 @@ def create_match(
 
         "winner": None
     }
-
-
 # =========================================================
 # CREATE COMPLETE TOURNAMENT FIXTURES
 # =========================================================
@@ -154,12 +155,34 @@ def create_matches():
 
 
     # =====================================================
-    # DAY 1 - MORNING SESSION
+    # 29 AUGUST 2026 - EVENING SESSION
     # =====================================================
 
-    day_one_fixtures = [
+    scheduled_fixtures = [
 
-        # stage, team A, team B, date, time, session
+        (
+            "Pool 2",
+            "Apex",
+            "Zenith",
+            "29 August 2026",
+            "4:00 – 4:45 PM",
+            "Evening Session"
+        ),
+
+        (
+            "Pool 1",
+            "Tribal Boys",
+            "Ezzey Volleyball",
+            "29 August 2026",
+            "4:50 – 5:30 PM",
+            "Evening Session"
+        ),
+
+
+        # =================================================
+        # 30 AUGUST 2026 - MORNING SESSION
+        # =================================================
+
         (
             "Pool 2",
             "Zenith",
@@ -216,15 +239,33 @@ def create_matches():
 
 
         # =================================================
-        # DAY 1 - EVENING SESSION
+        # 30 AUGUST 2026 - EVENING SESSION
         # =================================================
+
+        (
+            "Pool 1",
+            "Mahua Boyz",
+            "Tribal Boys",
+            "30 August 2026",
+            None,
+            "Evening Session"
+        ),
 
         (
             "Pool 1",
             "Dominators",
             "Mahua Boyz",
             "30 August 2026",
-            "3:00 – 3:45 PM",
+            None,
+            "Evening Session"
+        ),
+
+        (
+            "Pool 1",
+            "Mahua Boyz",
+            "Ezzey Volleyball",
+            "30 August 2026",
+            None,
             "Evening Session"
         ),
 
@@ -244,13 +285,113 @@ def create_matches():
             "30 August 2026",
             "4:40 – 5:40 PM",
             "Evening Session"
+        ),
+
+
+        # =================================================
+        # 31 AUGUST 2026 - MORNING SESSION
+        # =================================================
+
+        (
+            "Women's Pool",
+            "Team Rushh",
+            "Disciples",
+            "31 August 2026",
+            "5:00 – 5:45 AM",
+            "Morning Session"
+        ),
+
+        (
+            "Pool 3",
+            "The Disciples",
+            "PhD.",
+            "31 August 2026",
+            "5:50 – 6:30 AM",
+            "Morning Session"
+        ),
+
+        (
+            "Pool 1",
+            "Tribal Boys",
+            "Predators",
+            "31 August 2026",
+            "6:40 – 7:20 AM",
+            "Morning Session"
+        ),
+
+
+        # =================================================
+        # 31 AUGUST 2026 - EVENING SESSION
+        # =================================================
+
+        (
+            "Pool 3",
+            "The Disciples",
+            "Null Scapes",
+            "31 August 2026",
+            "4:30 – 5:30 PM",
+            "Evening Session"
+        ),
+
+
+        # =================================================
+        # 1 SEPTEMBER 2026 - MORNING SESSION
+        # =================================================
+
+        (
+            "Women's Pool",
+            "Disciples",
+            "Femme Force",
+            "1 September 2026",
+            "5:00 – 5:45 AM",
+            "Morning Session"
+        ),
+
+        (
+            "Women's Pool",
+            "Team Rushh",
+            "Velocity (A)",
+            "1 September 2026",
+            "5:50 – 6:30 AM",
+            "Morning Session"
+        ),
+
+        (
+            "Pool 3",
+            "The Disciples",
+            "Spike Force",
+            "1 September 2026",
+            "6:40 – 7:20 AM",
+            "Morning Session"
+        ),
+
+
+        # =================================================
+        # 1 SEPTEMBER 2026 - EVENING SESSION
+        # =================================================
+
+        (
+            "Pool 1",
+            "Tribal Boys",
+            "Dominators",
+            "1 September 2026",
+            "4:30 – 5:30 PM",
+            "Evening Session"
         )
     ]
 
 
-    # Add Day 1 fixtures first
+    # =====================================================
+    # ADD ALL SCHEDULED FIXTURES
+    # =====================================================
 
-    scheduled_pairs = set()
+    scheduled_pairs = {
+        "Pool 1": set(),
+        "Pool 2": set(),
+        "Pool 3": set(),
+        "Women's Pool": set()
+    }
+
 
     for (
         stage,
@@ -259,7 +400,7 @@ def create_matches():
         match_date,
         match_time,
         session_name
-    ) in day_one_fixtures:
+    ) in scheduled_fixtures:
 
         tournament_matches.append(
 
@@ -274,7 +415,7 @@ def create_matches():
             )
         )
 
-        scheduled_pairs.add(
+        scheduled_pairs[stage].add(
             tuple(sorted([team_a, team_b]))
         )
 
@@ -282,103 +423,40 @@ def create_matches():
 
 
     # =====================================================
-    # ADD REMAINING POOL 1 MATCHES
+    # ADD REMAINING POOL MATCHES
     # =====================================================
 
-    for team_a, team_b in combinations(
-        pools["Pool 1"],
-        2
-    ):
+    for pool_name, teams in pools.items():
 
-        pair = tuple(
-            sorted([team_a, team_b])
-        )
+        for team_a, team_b in combinations(teams, 2):
 
-        if pair not in scheduled_pairs:
+            pair = tuple(sorted([team_a, team_b]))
 
-            tournament_matches.append(
+            if pair not in scheduled_pairs[pool_name]:
 
-                create_match(
-                    match_id,
-                    "Pool 1",
-                    team_a,
-                    team_b,
-                    match_time=None,
-                    session_name="Later Fixtures"
+                tournament_matches.append(
+
+                    create_match(
+                        match_id,
+                        pool_name,
+                        team_a,
+                        team_b,
+                        match_time=None,
+                        session_name="Later Fixtures"
+                    )
                 )
-            )
 
-            match_id += 1
-
-
-    # =====================================================
-    # ADD REMAINING POOL 2 MATCHES
-    # =====================================================
-
-    for team_a, team_b in combinations(
-        pools["Pool 2"],
-        2
-    ):
-
-        pair = tuple(
-            sorted([team_a, team_b])
-        )
-
-        if pair not in scheduled_pairs:
-
-            tournament_matches.append(
-
-                create_match(
-                    match_id,
-                    "Pool 2",
-                    team_a,
-                    team_b,
-                    match_time=None,
-                    session_name="Later Fixtures"
-                )
-            )
-
-            match_id += 1
+                match_id += 1
 
 
     # =====================================================
-    # ADD REMAINING POOL 3 MATCHES
-    # =====================================================
-
-    for team_a, team_b in combinations(
-        pools["Pool 3"],
-        2
-    ):
-
-        pair = tuple(
-            sorted([team_a, team_b])
-        )
-
-        if pair not in scheduled_pairs:
-
-            tournament_matches.append(
-
-                create_match(
-                    match_id,
-                    "Pool 3",
-                    team_a,
-                    team_b,
-                    match_time=None,
-                    session_name="Later Fixtures"
-                )
-            )
-
-            match_id += 1
-
-
-    # =====================================================
-    # SEMI FINALS
+    # MEN'S SEMI FINALS
     # =====================================================
 
     tournament_matches.append(
 
         create_match(
-            23,
+            match_id,
             "Semi Final",
             "Pool 1 #1",
             "Pool 3 #1",
@@ -387,10 +465,13 @@ def create_matches():
         )
     )
 
+    match_id += 1
+
+
     tournament_matches.append(
 
         create_match(
-            24,
+            match_id,
             "Semi Final",
             "Pool 2 #1",
             "Pool 1 #2",
@@ -399,15 +480,17 @@ def create_matches():
         )
     )
 
+    match_id += 1
+
 
     # =====================================================
-    # FINAL
+    # MEN'S FINAL
     # =====================================================
 
     tournament_matches.append(
 
         create_match(
-            25,
+            match_id,
             "Final",
             "Winner SF1",
             "Winner SF2",
@@ -416,9 +499,27 @@ def create_matches():
         )
     )
 
+    match_id += 1
+
+
+    # =====================================================
+    # WOMEN'S FINAL
+    # =====================================================
+
+    tournament_matches.append(
+
+        create_match(
+            match_id,
+            "Women's Final",
+            "Women's Pool #1",
+            "Women's Pool #2",
+            status="locked",
+            label="WOMENS_FINAL"
+        )
+    )
+
 
     return tournament_matches
-
 
 # =========================================================
 # SUPABASE SAVE
@@ -478,59 +579,272 @@ def load_tournament_state():
 
 scoring_format = "25-25-15"
 
-
 # =========================================================
 # LOAD TOURNAMENT ON SERVER START
 # =========================================================
 
-
-
 saved_state = load_tournament_state()
 
-if saved_state:
+
+# =========================================================
+# MATCH IDENTITY HELPER
+# =========================================================
+
+def get_match_key(match):
+
+    return (
+        match.get("stage"),
+        tuple(
+            sorted([
+                match.get("teamA"),
+                match.get("teamB")
+            ])
+        )
+    )
+
+
+# =========================================================
+# APPLY MAHUA BOYZ WALKOVERS
+# =========================================================
+
+def apply_mahua_walkovers(match_list):
+
+    walkover_results = [
+
+        {
+            "teamA": "Mahua Boyz",
+            "teamB": "Tribal Boys",
+            "winner": "Tribal Boys"
+        },
+
+        {
+            "teamA": "Dominators",
+            "teamB": "Mahua Boyz",
+            "winner": "Dominators"
+        },
+
+        {
+            "teamA": "Mahua Boyz",
+            "teamB": "Ezzey Volleyball",
+            "winner": "Ezzey Volleyball"
+        }
+    ]
+
+
+    for walkover in walkover_results:
+
+        for match in match_list:
+
+            if (
+
+                match.get("teamA")
+                == walkover["teamA"]
+
+                and
+
+                match.get("teamB")
+                == walkover["teamB"]
+
+            ):
+
+                match["status"] = "finished"
+
+                match["winner"] = walkover["winner"]
+
+                match["scoreA"] = 0
+                match["scoreB"] = 0
+
+                match["setHistory"] = []
+
+                match["walkover"] = True
+
+
+                if (
+                    walkover["winner"]
+                    == match["teamA"]
+                ):
+
+                    match["setsA"] = 2
+                    match["setsB"] = 0
+
+                else:
+
+                    match["setsA"] = 0
+                    match["setsB"] = 2
+
+
+                break
+
+
+# =========================================================
+# CHECK WHETHER OLD TOURNAMENT DATA NEEDS MIGRATION
+# =========================================================
+
+needs_migration = False
+
+
+if not saved_state:
+
+    needs_migration = True
+
+else:
+
+    saved_pools = saved_state.get(
+        "pools",
+        {}
+    )
+
+    # If Women's Pool is missing,
+    # the old Supabase tournament structure is still active.
+
+    if "Women's Pool" not in saved_pools:
+
+        needs_migration = True
+
+
+# =========================================================
+# MIGRATE OLD TOURNAMENT DATA SAFELY
+# =========================================================
+
+if needs_migration:
+
+    print(
+        "Migrating tournament to latest fixture structure..."
+    )
+
+
+    # Keep the latest pools from app.py
+    # including Women's Pool.
+
+    new_matches = create_matches()
+
+
+    old_matches = []
+
+    if saved_state:
+
+        old_matches = saved_state.get(
+            "matches",
+            []
+        )
+
+
+    # Store old matches using team/stage identity.
+
+    old_match_map = {
+
+        get_match_key(match): match
+
+        for match in old_matches
+
+    }
+
+
+    merged_matches = []
+
+
+    for new_match in new_matches:
+
+        key = get_match_key(new_match)
+
+        old_match = old_match_map.get(key)
+
+
+        # Preserve matches that were already played
+        # or are currently live.
+
+        if (
+
+            old_match
+
+            and old_match.get("status")
+            in [
+                "completed",
+                "finished",
+                "live"
+            ]
+
+        ):
+
+            # Preserve the old match result,
+            # but update fixture information.
+
+            old_match["stage"] = new_match["stage"]
+
+            old_match["date"] = new_match.get(
+                "date"
+            )
+
+            old_match["time"] = new_match.get(
+                "time"
+            )
+
+            old_match["session"] = new_match.get(
+                "session"
+            )
+
+            old_match["label"] = new_match.get(
+                "label"
+            )
+
+            merged_matches.append(
+                old_match
+            )
+
+        else:
+
+            merged_matches.append(
+                new_match
+            )
+
+
+    matches = merged_matches
+
+
+    # Apply the three confirmed Mahua Boyz walkovers.
+
+    apply_mahua_walkovers(
+        matches
+    )
+
+
+    # Save the new tournament permanently.
+
+    save_tournament_state()
+
+
+    print(
+        "Tournament migration completed successfully."
+    )
+
+
+# =========================================================
+# NORMAL STARTUP
+# =========================================================
+
+else:
 
     pools = saved_state.get(
         "pools",
         pools
     )
 
+
+    matches = saved_state.get(
+        "matches",
+        []
+    )
+
+
     scoring_format = saved_state.get(
-         "scoring_format",
+        "scoring_format",
         scoring_format
     )
 
-    print(
-        "Tournament data found in Supabase."
-    )
-
-else:
 
     print(
-        "No existing tournament found in Supabase."
+        "Tournament loaded normally from Supabase."
     )
-
-
-# =========================================================
-# CREATE AND SAVE CURRENT FIXTURE SCHEDULE
-# =========================================================
-
-# The current tournament has not started yet.
-# Therefore, create_matches() is the source of truth and
-# replaces the old fixture schedule stored in Supabase.
-
-matches = create_matches()
-
-save_tournament_state()
-
-
-print(
-    "Current fixture schedule saved to Supabase."
-)
-
-
-
-
-
 # =========================================================
 # HELPER FUNCTIONS
 # =========================================================
