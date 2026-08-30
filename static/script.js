@@ -1564,7 +1564,7 @@ async function setScoringFormat(format) {
             "Network error while changing scoring format."
         );
     }
-}
+
 
 // Update local tournament data immediately
 tournamentData.scoring_format =
@@ -1573,3 +1573,4 @@ tournamentData.scoring_format =
 
 // Refresh all UI elements
 updateEverything();
+}
