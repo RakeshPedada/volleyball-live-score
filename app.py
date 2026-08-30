@@ -1584,7 +1584,7 @@ def update_scoring_format():
 
     global scoring_format
 
-    data = request.get_json()
+    data = request.get_json() or{}
 
     new_format = data.get("format")
 
