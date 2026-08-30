@@ -365,7 +365,6 @@ def create_matches():
             "Morning Session"
         ),
 
-
         # =================================================
         # 1 SEPTEMBER 2026 - EVENING SESSION
         # =================================================
@@ -377,7 +376,91 @@ def create_matches():
             "1 September 2026",
             "4:30 – 5:30 PM",
             "Evening Session"
+        ),
+
+
+        # =================================================
+        # 2 SEPTEMBER 2026 - MORNING SESSION
+        # =================================================
+
+        (
+            "Women's Pool",
+            "Femme Force",
+            "Velocity (A)",
+            "2 September 2026",
+            "5:00 – 5:45 AM",
+            "Morning Session"
+        ),
+
+        (
+            "Pool 3",
+            "PhD.",
+            "Spike Force",
+            "2 September 2026",
+            "5:50 – 6:30 AM",
+            "Morning Session"
+        ),
+
+        (
+            "Pool 1",
+            "Predators",
+            "Ezzey Volleyball",
+            "2 September 2026",
+            "6:40 – 7:20 AM",
+            "Morning Session"
+        ),
+
+
+        # =================================================
+        # 2 SEPTEMBER 2026 - EVENING SESSION
+        # =================================================
+
+        (
+            "Pool 3",
+            "PhD.",
+            "Null Scapes",
+            "2 September 2026",
+            "4:30 – 5:30 PM",
+            "Evening Session"
+        ),
+
+
+        # =================================================
+        # 3 SEPTEMBER 2026 - MORNING SESSION
+        # =================================================
+
+        (
+            "Pool 1",
+            "Ezzey Volleyball",
+            "Dominators",
+            "3 September 2026",
+            "5:00 – 5:45 AM",
+            "Morning Session"
+        ),
+
+        (
+            "Women's Pool",
+            "Team Rushh",
+            "Femme Force",
+            "3 September 2026",
+            "5:50 – 6:30 AM",
+            "Morning Session"
+        ),
+
+
+        # =================================================
+        # 4 SEPTEMBER 2026 - MORNING SESSION
+        # =================================================
+
+        (
+            "Women's Pool",
+            "Disciples",
+            "Velocity (A)",
+            "4 September 2026",
+            "6:00 – 7:30 AM",
+            "Morning Session"
         )
+
     ]
 
 
@@ -420,17 +503,20 @@ def create_matches():
         )
 
         match_id += 1
-
-
     # =====================================================
     # ADD REMAINING POOL MATCHES
     # =====================================================
 
     for pool_name, teams in pools.items():
 
-        for team_a, team_b in combinations(teams, 2):
+        for team_a, team_b in combinations(
+            teams,
+            2
+        ):
 
-            pair = tuple(sorted([team_a, team_b]))
+            pair = tuple(
+                sorted([team_a, team_b])
+            )
 
             if pair not in scheduled_pairs[pool_name]:
 
@@ -450,7 +536,7 @@ def create_matches():
 
 
     # =====================================================
-    # MEN'S SEMI FINALS
+    # MEN'S SEMI FINAL 1
     # =====================================================
 
     tournament_matches.append(
@@ -461,12 +547,19 @@ def create_matches():
             "Pool 1 #1",
             "Pool 3 #1",
             status="locked",
-            label="SF1"
+            label="SF1",
+            match_date="3 September 2026",
+            match_time="6:40 – 7:20 AM",
+            session_name="Morning Session"
         )
     )
 
     match_id += 1
 
+
+    # =====================================================
+    # MEN'S SEMI FINAL 2
+    # =====================================================
 
     tournament_matches.append(
 
@@ -476,7 +569,10 @@ def create_matches():
             "Pool 2 #1",
             "Pool 1 #2",
             status="locked",
-            label="SF2"
+            label="SF2",
+            match_date="3 September 2026",
+            match_time="4:30 – 5:30 PM",
+            session_name="Evening Session"
         )
     )
 
@@ -495,7 +591,10 @@ def create_matches():
             "Winner SF1",
             "Winner SF2",
             status="locked",
-            label="FINAL"
+            label="FINAL",
+            match_date="4 September 2026",
+            match_time="5:30 – 6:45 AM",
+            session_name="Morning Session"
         )
     )
 
@@ -514,13 +613,17 @@ def create_matches():
             "Women's Pool #1",
             "Women's Pool #2",
             status="locked",
-            label="WOMENS_FINAL"
+            label="WOMENS_FINAL",
+            match_date="4 September 2026",
+            match_time="4:45 – 5:15 PM",
+            session_name="Evening Session"
         )
     )
 
+    match_id += 1
+
 
     return tournament_matches
-
 # =========================================================
 # SUPABASE SAVE
 # =========================================================
