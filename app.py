@@ -1586,7 +1586,7 @@ def update_scoring_format():
 
     data = request.get_json() or{}
 
-    new_format = data.get("format")
+    new_format = data.get("scoring_format")
 
     if new_format not in [
         "25-25-15",
