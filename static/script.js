@@ -1524,37 +1524,106 @@ function updateKnockout() {
     });
 
 }
+
+
+function updateScoringFormatButtons() {
+
+    if (!tournamentData) {
+        return;
+    }
+
+    const format =
+        tournamentData.scoring_format ||
+        "25-25-15";
+
+    const button252515 =
+        document.getElementById("format252515");
+
+    const button151525 =
+        document.getElementById("format151525");
+
+    const note =
+        document.getElementById("scoringFormatNote");
+
+
+    if (button252515 && button151525) {
+
+        button252515.classList.toggle(
+            "active",
+            format === "25-25-15"
+        );
+
+        button151525.classList.toggle(
+            "active",
+            format === "15-15-25"
+        );
+
+    }
+
+
+    if (note) {
+
+        if (format === "15-15-25") {
+
+            note.textContent =
+                "Best of 3 Sets • Sets 1 & 2: Minimum 15 Points • Deciding Set: Minimum 25 Points • 2 Point Lead Required";
+
+        } else {
+
+            note.textContent =
+                "Best of 3 Sets • Sets 1 & 2: Minimum 25 Points • Deciding Set: Minimum 15 Points • 2 Point Lead Required";
+
+        }
+
+    }
+
+}
 /* =========================================================
    RESET TOURNAMENT
 ========================================================= */
 async function setScoringFormat(format) {
+
     try {
+
         const response = await fetch("/api/scoring-format", {
+
             method: "POST",
+
             headers: {
                 "Content-Type": "application/json"
             },
+
             body: JSON.stringify({
                 scoring_format: format
             })
+
         });
+
 
         const result = await response.json();
 
+
         if (!response.ok) {
+
             alert(
                 result.error ||
                 "Could not update scoring format."
             );
+
             return;
+
         }
+
 
         tournamentData.scoring_format =
             result.scoring_format;
 
+
         updateEverything();
 
+
     } catch (error) {
+
         console.error(
             "Scoring format error:",
             error
@@ -1563,6 +1632,7 @@ async function setScoringFormat(format) {
         alert(
             "Network error while changing scoring format."
         );
+
     }
 
 
