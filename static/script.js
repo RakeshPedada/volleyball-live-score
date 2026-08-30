@@ -1443,7 +1443,7 @@ function updateKnockout() {
     const womensFinal =
         tournamentData.matches.filter(
             match =>
-                match.label === "WOMEN'S FINAL"
+                match.stage === "Women's Final"
         );
 
 

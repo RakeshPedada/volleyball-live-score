@@ -628,7 +628,7 @@ def create_matches():
 
             match_date="4 September 2026",
 
-            match_time="4:45 – 5:15 PM",
+            match_time="4:30 – 5:15 PM",
 
             session_name="Evening Session"
         )
