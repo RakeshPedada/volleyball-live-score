@@ -141,7 +141,10 @@ def create_match(
 
         "setHistory": [],
 
-        "winner": None
+        "winner": None,
+
+        # NEW
+        "walkover": False 
     }
 # =========================================================
 # CREATE COMPLETE TOURNAMENT FIXTURES
@@ -534,7 +537,6 @@ def create_matches():
 
                 match_id += 1
 
-
     # =====================================================
     # MEN'S SEMI FINAL 1
     # =====================================================
@@ -548,8 +550,11 @@ def create_matches():
             "Pool 3 #1",
             status="locked",
             label="SF1",
+
             match_date="3 September 2026",
+
             match_time="6:40 – 7:20 AM",
+
             session_name="Morning Session"
         )
     )
@@ -570,8 +575,11 @@ def create_matches():
             "Pool 1 #2",
             status="locked",
             label="SF2",
+
             match_date="3 September 2026",
+
             match_time="4:30 – 5:30 PM",
+
             session_name="Evening Session"
         )
     )
@@ -592,8 +600,11 @@ def create_matches():
             "Winner SF2",
             status="locked",
             label="FINAL",
+
             match_date="4 September 2026",
+
             match_time="5:30 – 6:45 AM",
+
             session_name="Morning Session"
         )
     )
@@ -614,8 +625,11 @@ def create_matches():
             "Women's Pool #2",
             status="locked",
             label="WOMENS_FINAL",
+
             match_date="4 September 2026",
+
             match_time="4:45 – 5:15 PM",
+
             session_name="Evening Session"
         )
     )
@@ -624,6 +638,52 @@ def create_matches():
 
 
     return tournament_matches
+# =========================================================
+# APPLY KNOCKOUT SCHEDULE
+# =========================================================
+
+def apply_knockout_schedule(match_list):
+
+    schedule = {
+
+        "SF1": {
+            "date": "3 September 2026",
+            "time": "6:40 – 7:20 AM",
+            "session": "Morning Session"
+        },
+
+        "SF2": {
+            "date": "3 September 2026",
+            "time": "4:30 – 5:30 PM",
+            "session": "Evening Session"
+        },
+
+        "FINAL": {
+            "date": "4 September 2026",
+            "time": "5:30 – 6:45 AM",
+            "session": "Morning Session"
+        },
+
+        "WOMENS_FINAL": {
+            "date": "4 September 2026",
+            "time": "4:45 – 5:15 PM",
+            "session": "Evening Session"
+        }
+    }
+
+
+    for match in match_list:
+
+        label = match.get("label")
+
+        if label in schedule:
+
+            match["date"] = schedule[label]["date"]
+
+            match["time"] = schedule[label]["time"]
+
+            match["session"] = schedule[label]["session"]
+     
 # =========================================================
 # SUPABASE SAVE
 # =========================================================
@@ -705,7 +765,6 @@ def get_match_key(match):
         )
     )
 
-
 # =========================================================
 # APPLY MAHUA BOYZ WALKOVERS
 # =========================================================
@@ -738,34 +797,27 @@ def apply_mahua_walkovers(match_list):
 
         for match in match_list:
 
-            if (
-
-                match.get("teamA")
-                == walkover["teamA"]
-
+            teams_match = (
+                match.get("teamA") == walkover["teamA"]
                 and
+                match.get("teamB") == walkover["teamB"]
+            )
 
-                match.get("teamB")
-                == walkover["teamB"]
-
-            ):
+            if teams_match:
 
                 match["status"] = "finished"
 
                 match["winner"] = walkover["winner"]
+
+                match["walkover"] = True
 
                 match["scoreA"] = 0
                 match["scoreB"] = 0
 
                 match["setHistory"] = []
 
-                match["walkover"] = True
 
-
-                if (
-                    walkover["winner"]
-                    == match["teamA"]
-                ):
+                if walkover["winner"] == match["teamA"]:
 
                     match["setsA"] = 2
                     match["setsB"] = 0
@@ -944,6 +996,19 @@ else:
         scoring_format
     )
 
+    # =========================================================
+    # ALWAYS APPLY CONFIRMED TOURNAMENT UPDATES
+    # =========================================================
+
+    apply_mahua_walkovers(matches)
+
+    apply_knockout_schedule(matches)
+
+    save_tournament_state()
+
+    print(
+        "Tournament updates applied successfully."
+    )
 
     print(
         "Tournament loaded normally from Supabase."

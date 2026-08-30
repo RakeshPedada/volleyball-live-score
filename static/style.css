@@ -2686,3 +2686,29 @@ tr:hover td {
     }
 
 }
+.walkover-result {
+
+    margin-top: 12px;
+
+    padding: 10px 15px;
+
+    border-radius: 8px;
+
+    font-weight: bold;
+
+    text-align: center;
+
+    background: rgba(220, 53, 69, 0.15);
+
+    border: 1px solid rgba(220, 53, 69, 0.4);
+
+}
+
+.knockout-schedule {
+    color: var(--primary-light);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.6;
+    text-align: center;
+    margin-top: 6px;
+}

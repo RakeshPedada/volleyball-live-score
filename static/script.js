@@ -26,6 +26,29 @@ function getTargetScore(match) {
 
 }
 
+function getMatchStatusText(match) {
+
+    if (match.walkover === true) {
+        return "🚫 WALKOVER";
+    }
+
+    if (match.status === "finished" ||
+        match.status === "completed") {
+
+        return "FINISHED";
+    }
+
+    if (match.status === "live") {
+        return "🔴 LIVE";
+    }
+
+    if (match.status === "locked") {
+        return "🔒 LOCKED";
+    }
+
+    return "UPCOMING";
+}
+
 
 /* =========================================================
    LOAD DATA
@@ -845,7 +868,9 @@ function updateFixtures() {
                     }
 
 
-                    let time = match.time || "TBA";
+                    const matchTime = match.walkover
+                        ? "🚫 WALKOVER"
+                        : (match.time || "TBA");
 
 
                     container.innerHTML += `
@@ -862,7 +887,7 @@ function updateFixtures() {
 
                             <div class="match-time">
 
-                                ⏰ ${time}
+                                 ${matchTime}
 
                             </div>
 
@@ -882,9 +907,20 @@ function updateFixtures() {
 
                             <div class="match-status ${match.status}">
 
-                                ${match.status.toUpperCase()}
+                                ${getMatchStatusText(match)}
 
                             </div>
+
+                            ${match.walkover ? `
+
+                            <div class="walkover-result">
+
+                                🏆 WINNER:
+                                <strong>${match.winner}</strong>
+
+                            </div>
+
+                        ` : ""}
 
                         </div>
 
@@ -1271,138 +1307,138 @@ function updateKnockout() {
 
     `;
 
+mensMatches.forEach(match => {
 
-    mensMatches.forEach(match => {
-
-        let score = "VS";
-
-
-        if (
-            match.status === "finished"
-            ||
-            match.status === "live"
-        ) {
-
-            score =
-                `${match.setsA} - ${match.setsB}`;
-
-        }
+    let score = "VS";
 
 
-        container.innerHTML += `
+    if (
+        match.status === "finished"
+        ||
+        match.status === "live"
+    ) {
 
-            <div class="match-row">
+        score =
+            `${match.setsA} - ${match.setsB}`;
 
-                <div class="match-stage">
-
-                    ${match.label || match.stage}
-
-                </div>
-
-
-                <div class="match-teams">
-
-                    ${match.teamA}
-
-                    <b>${score}</b>
-
-                    ${match.teamB}
-
-                </div>
-
-
-                <div class="
-                    match-status
-                    ${match.status}
-                ">
-
-                    ${match.status.toUpperCase()}
-
-                </div>
-
-            </div>
-
-        `;
-
-    });
-
-
-    // =====================================================
-    // WOMEN'S FINAL
-    // =====================================================
-
-    const womensFinal =
-        tournamentData.matches.filter(
-            match =>
-                match.stage === "Women's Final"
-        );
+    }
 
 
     container.innerHTML += `
 
-        <h2 class="knockout-heading womens-knockout-heading">
-            👑 WOMEN'S FINAL
-        </h2>
+        <div class="match-row">
 
-    `;
+            <div class="match-stage">
 
-
-    womensFinal.forEach(match => {
-
-        let score = "VS";
-
-
-        if (
-            match.status === "finished"
-            ||
-            match.status === "live"
-        ) {
-
-            score =
-                `${match.setsA} - ${match.setsB}`;
-
-        }
-
-
-        container.innerHTML += `
-
-            <div class="match-row womens-final-row">
-
-                <div class="match-stage">
-
-                    WOMEN'S FINAL
-
-                </div>
-
-
-                <div class="match-teams">
-
-                    ${match.teamA}
-
-                    <b>${score}</b>
-
-                    ${match.teamB}
-
-                </div>
-
-
-                <div class="
-                    match-status
-                    ${match.status}
-                ">
-
-                    ${match.status.toUpperCase()}
-
-                </div>
+                ${match.label || match.stage}
 
             </div>
 
-        `;
 
-    });
+            <div class="match-teams">
 
-}
+                ${match.teamA}
 
+                <b>${score}</b>
+
+                ${match.teamB}
+
+            </div>
+
+
+            <div class="knockout-schedule">
+
+                📅 ${match.date || "TBA"}
+
+                <br>
+
+                ⏰ ${match.time || "TBA"}
+
+            </div>
+
+
+            <div class="
+                match-status
+                ${match.status}
+            ">
+
+                ${getMatchStatusText(match)}
+
+            </div>
+
+        </div>
+
+    `;
+
+});
+    // =====================================================
+    // WOMEN'S FINAL
+    // =====================================================
+
+womensFinal.forEach(match => {
+
+    let score = "VS";
+
+
+    if (
+        match.status === "finished"
+        ||
+        match.status === "live"
+    ) {
+
+        score =
+            `${match.setsA} - ${match.setsB}`;
+
+    }
+
+
+    container.innerHTML += `
+
+        <div class="match-row womens-final-row">
+
+            <div class="match-stage">
+
+                WOMEN'S FINAL
+
+            </div>
+
+
+            <div class="match-teams">
+
+                ${match.teamA}
+
+                <b>${score}</b>
+
+                ${match.teamB}
+
+            </div>
+
+
+            <div class="knockout-schedule">
+
+                📅 ${match.date || "TBA"}
+
+                <br>
+
+                ⏰ ${match.time || "TBA"}
+
+            </div>
+
+
+            <div class="
+                match-status
+                ${match.status}
+            ">
+
+                ${getMatchStatusText(match)}
+
+            </div>
+
+        </div>
+
+    `;
+
+});
 /* =========================================================
    RESET TOURNAMENT
 ========================================================= */
@@ -1567,4 +1603,3 @@ async function setScoringFormat(format) {
     // Refresh all UI elements
     updateEverything();
 
-}
