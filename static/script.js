@@ -1574,3 +1574,11 @@ tournamentData.scoring_format =
 // Refresh all UI elements
 updateEverything();
 }
+
+document.addEventListener("DOMContentLoaded", async () => {
+
+    await checkAdminStatus();
+
+    await loadData();
+
+});
