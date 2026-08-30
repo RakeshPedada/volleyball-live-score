@@ -1339,13 +1339,14 @@ function updateStandings() {
 /* =========================================================
    KNOCKOUT
 ========================================================= */
-
 function updateKnockout() {
 
     const container =
-        document.getElementById(
-            "knockoutContainer"
-        );
+        document.getElementById("knockoutContainer");
+
+    if (!container || !tournamentData) {
+        return;
+    }
 
     container.innerHTML = "";
 
@@ -1371,281 +1372,178 @@ function updateKnockout() {
 
     `;
 
-mensMatches.forEach(match => {
 
-    let score = "VS";
+    mensMatches.forEach(match => {
+
+        let score = "VS";
+
+        if (
+            match.status === "finished"
+            ||
+            match.status === "live"
+        ) {
+
+            score =
+                `${match.setsA} - ${match.setsB}`;
+
+        }
 
 
-    if (
-        match.status === "finished"
-        ||
-        match.status === "live"
-    ) {
+        container.innerHTML += `
 
-        score =
-            `${match.setsA} - ${match.setsB}`;
+            <div class="match-row">
 
-    }
+                <div class="match-stage">
+                    ${match.label || match.stage}
+                </div>
 
 
-    container.innerHTML += `
+                <div class="match-teams">
 
-        <div class="match-row">
+                    ${match.teamA}
 
-            <div class="match-stage">
+                    <b>${score}</b>
 
-                ${match.label || match.stage}
+                    ${match.teamB}
+
+                </div>
+
+
+                <div class="knockout-schedule">
+
+                    📅 ${match.date || "TBA"}
+
+                    <br>
+
+                    ⏰ ${match.time || "TBA"}
+
+                </div>
+
+
+                <div class="
+                    match-status
+                    ${match.status}
+                ">
+
+                    ${getMatchStatusText(match)}
+
+                </div>
 
             </div>
 
+        `;
 
-            <div class="match-teams">
-
-                ${match.teamA}
-
-                <b>${score}</b>
-
-                ${match.teamB}
-
-            </div>
+    });
 
 
-            <div class="knockout-schedule">
-
-                📅 ${match.date || "TBA"}
-
-                <br>
-
-                ⏰ ${match.time || "TBA"}
-
-            </div>
-
-
-            <div class="
-                match-status
-                ${match.status}
-            ">
-
-                ${getMatchStatusText(match)}
-
-            </div>
-
-        </div>
-
-    `;
-
-});
     // =====================================================
     // WOMEN'S FINAL
     // =====================================================
 
-womensFinal.forEach(match => {
+    const womensFinal =
+        tournamentData.matches.filter(
+            match =>
+                match.label === "WOMEN'S FINAL"
+        );
 
-    let score = "VS";
 
+    if (womensFinal.length > 0) {
 
-    if (
-        match.status === "finished"
-        ||
-        match.status === "live"
-    ) {
+        container.innerHTML += `
 
-        score =
-            `${match.setsA} - ${match.setsB}`;
+            <h2 class="knockout-heading womens-heading">
+                👑 WOMEN'S FINAL
+            </h2>
+
+        `;
 
     }
 
 
-    container.innerHTML += `
+    womensFinal.forEach(match => {
 
-        <div class="match-row womens-final-row">
+        let score = "VS";
 
-            <div class="match-stage">
 
-                WOMEN'S FINAL
+        if (
+            match.status === "finished"
+            ||
+            match.status === "live"
+        ) {
+
+            score =
+                `${match.setsA} - ${match.setsB}`;
+
+        }
+
+
+        container.innerHTML += `
+
+            <div class="match-row womens-final-row">
+
+                <div class="match-stage">
+                    WOMEN'S FINAL
+                </div>
+
+
+                <div class="match-teams">
+
+                    ${match.teamA}
+
+                    <b>${score}</b>
+
+                    ${match.teamB}
+
+                </div>
+
+
+                <div class="knockout-schedule">
+
+                    📅 ${match.date || "TBA"}
+
+                    <br>
+
+                    ⏰ ${match.time || "TBA"}
+
+                </div>
+
+
+                <div class="
+                    match-status
+                    ${match.status}
+                ">
+
+                    ${getMatchStatusText(match)}
+
+                </div>
 
             </div>
 
+        `;
 
-            <div class="match-teams">
+    });
 
-                ${match.teamA}
-
-                <b>${score}</b>
-
-                ${match.teamB}
-
-            </div>
-
-
-            <div class="knockout-schedule">
-
-                📅 ${match.date || "TBA"}
-
-                <br>
-
-                ⏰ ${match.time || "TBA"}
-
-            </div>
-
-
-            <div class="
-                match-status
-                ${match.status}
-            ">
-
-                ${getMatchStatusText(match)}
-
-            </div>
-
-        </div>
-
-    `;
-
-});
 }
 /* =========================================================
    RESET TOURNAMENT
 ========================================================= */
-
-async function resetTournament() {
-
-    const confirmed =
-        confirm(
-            "Are you sure you want to reset the entire tournament?"
-        );
-
-
-    if (!confirmed) return;
-
-
-    const response = await fetch(
-        "/api/reset",
-        {
-            method: "POST"
-        }
-    );
-
-
-    const result =
-        await response.json();
-
-
-    if (!response.ok) {
-
-        alert(
-            result.error
-            || "Could not reset tournament."
-        );
-
-        return;
-
-    }
-
-
-    selectedMatchId = null;
-
-
-    await loadData();
-
-}
-
-
-/* =========================================================
-   INITIALIZATION
-========================================================= */
-
-async function initializeApp() {
-
-    await checkAdminStatus();
-
-    await loadData();
-
-}
-
-
-initializeApp();
-
-
-/* Refresh live data every 3 seconds */
-
-setInterval(
-    loadData,
-    3000
-);
-function updateScoringFormatButtons() {
-
-    if (!tournamentData) {
-        return;
-    }
-
-    const format =
-        tournamentData.scoring_format
-        || "25-25-15";
-
-    const button252515 =
-        document.getElementById("format252515");
-
-    const button151525 =
-        document.getElementById("format151525");
-
-    const note =
-        document.getElementById("scoringFormatNote");
-
-
-    // Update active scoring format button
-    if (button252515 && button151525) {
-
-        button252515.classList.toggle(
-            "active",
-            format === "25-25-15"
-        );
-
-        button151525.classList.toggle(
-            "active",
-            format === "15-15-25"
-        );
-
-    }
-
-
-    // Update scoring format description
-    if (note) {
-
-        if (format === "15-15-25") {
-
-            note.textContent =
-                "Best of 3 Sets • Sets 1 & 2: Minimum 15 Points • Deciding Set: Minimum 25 Points • 2 Point Lead Required";
-
-        } else {
-
-            note.textContent =
-                "Best of 3 Sets • Sets 1 & 2: Minimum 25 Points • Deciding Set: Minimum 15 Points • 2 Point Lead Required";
-
-        }
-
-    }
-
-}
-
 async function setScoringFormat(format) {
 
     try {
 
-        const response = await fetch(
-            "/api/scoring-format",
-            {
-                method: "POST",
+        const response = await fetch("/api/scoring-format", {
 
-                headers: {
-                    "Content-Type": "application/json"
-                },
+            method: "POST",
 
-                body: JSON.stringify({
-                    format: format
-                })
-            }
-        );
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                scoring_format: format
+            })
+
+        });
 
 
         const result = await response.json();
@@ -1659,6 +1557,7 @@ async function setScoringFormat(format) {
             );
 
             return;
+
         }
 
 
@@ -1668,11 +1567,6 @@ async function setScoringFormat(format) {
 
         updateEverything();
 
-
-        console.log(
-            "Scoring format changed to:",
-            result.scoring_format
-        );
 
     } catch (error) {
 
@@ -1686,15 +1580,5 @@ async function setScoringFormat(format) {
         );
 
     }
-
-
-    
-    // Update local tournament data immediately
-    tournamentData.scoring_format =
-        result.scoring_format;
-
-        
-    // Refresh all UI elements
-    updateEverything();
 
 }
