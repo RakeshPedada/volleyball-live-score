@@ -699,10 +699,11 @@ let history = "";
 function updatePools() {
 
     const poolContainers = {
-        "Pool 1": "pool1Teams",
-        "Pool 2": "pool2Teams",
-        "Pool 3": "pool3Teams"
-    };
+    "Pool 1": "pool1Teams",
+    "Pool 2": "pool2Teams",
+    "Pool 3": "pool3Teams",
+    "Women's Pool": "womensPoolTeams"
+};
 
 
     Object.entries(poolContainers)
@@ -746,9 +747,12 @@ function updateFixtures() {
 
 
     const poolMatches =
-        tournamentData.matches.filter(
-            match => match.stage.startsWith("Pool")
-        );
+    tournamentData.matches.filter(
+        match =>
+            match.stage.startsWith("Pool")
+            ||
+            match.stage === "Women's Pool"
+    );
 
 
     // =====================================================
@@ -1091,7 +1095,8 @@ function updateStandings() {
     [
         "Pool 1",
         "Pool 2",
-        "Pool 3"
+        "Pool 3",
+        "Women's Pool"
     ]
         .forEach(poolName => {
 
@@ -1099,11 +1104,24 @@ function updateStandings() {
             const table =
                 calculateStandings(poolName);
 
+            let qualificationText;
 
-            const qualificationText =
-                poolName === "Pool 1"
-                    ? "🏆 Top 2 Qualify"
-                    : "🏆 Top 1 Qualifies";
+            if (poolName === "Pool 1") {
+
+                qualificationText =
+                    "🏆 Top 2 Qualify for Men's Knockout";
+
+            } else if (poolName === "Women's Pool") {
+
+                qualificationText =
+                    "🏆 Top 2 Qualify for Women's Final";
+
+            } else {
+
+                qualificationText =
+                    "🏆 Top 1 Qualifies for Men's Knockout";
+
+            }
 
 
             let rows = "";
@@ -1218,7 +1236,6 @@ function updateStandings() {
         });
 
 }
-
 /* =========================================================
    KNOCKOUT
 ========================================================= */
@@ -1230,72 +1247,161 @@ function updateKnockout() {
             "knockoutContainer"
         );
 
-
     container.innerHTML = "";
 
 
-    tournamentData.matches
-        .filter(
+    // =====================================================
+    // MEN'S KNOCKOUT
+    // =====================================================
+
+    const mensMatches =
+        tournamentData.matches.filter(
             match =>
                 match.stage === "Semi Final"
                 ||
                 match.stage === "Final"
-        )
-        .forEach(match => {
-
-            let score = "VS";
+        );
 
 
-            if (
-                match.status === "finished"
-                || match.status === "live"
-            ) {
+    container.innerHTML += `
 
-                score =
-                    `${match.setsA} - ${match.setsB}`;
+        <h2 class="knockout-heading">
+            🏆 MEN'S KNOCKOUT
+        </h2>
 
-            }
+    `;
 
 
-            container.innerHTML += `
+    mensMatches.forEach(match => {
 
-                <div class="match-row">
-
-                    <div class="match-stage">
-
-                        ${match.label || match.stage}
-
-                    </div>
+        let score = "VS";
 
 
-                    <div class="match-teams">
+        if (
+            match.status === "finished"
+            ||
+            match.status === "live"
+        ) {
 
-                        ${match.teamA}
+            score =
+                `${match.setsA} - ${match.setsB}`;
 
-                        <b>${score}</b>
-
-                        ${match.teamB}
-
-                    </div>
+        }
 
 
-                    <div class="
-                        match-status
-                        ${match.status}
-                    ">
+        container.innerHTML += `
 
-                        ${match.status.toUpperCase()}
+            <div class="match-row">
 
-                    </div>
+                <div class="match-stage">
+
+                    ${match.label || match.stage}
 
                 </div>
 
-            `;
 
-        });
+                <div class="match-teams">
+
+                    ${match.teamA}
+
+                    <b>${score}</b>
+
+                    ${match.teamB}
+
+                </div>
+
+
+                <div class="
+                    match-status
+                    ${match.status}
+                ">
+
+                    ${match.status.toUpperCase()}
+
+                </div>
+
+            </div>
+
+        `;
+
+    });
+
+
+    // =====================================================
+    // WOMEN'S FINAL
+    // =====================================================
+
+    const womensFinal =
+        tournamentData.matches.filter(
+            match =>
+                match.stage === "Women's Final"
+        );
+
+
+    container.innerHTML += `
+
+        <h2 class="knockout-heading womens-knockout-heading">
+            👑 WOMEN'S FINAL
+        </h2>
+
+    `;
+
+
+    womensFinal.forEach(match => {
+
+        let score = "VS";
+
+
+        if (
+            match.status === "finished"
+            ||
+            match.status === "live"
+        ) {
+
+            score =
+                `${match.setsA} - ${match.setsB}`;
+
+        }
+
+
+        container.innerHTML += `
+
+            <div class="match-row womens-final-row">
+
+                <div class="match-stage">
+
+                    WOMEN'S FINAL
+
+                </div>
+
+
+                <div class="match-teams">
+
+                    ${match.teamA}
+
+                    <b>${score}</b>
+
+                    ${match.teamB}
+
+                </div>
+
+
+                <div class="
+                    match-status
+                    ${match.status}
+                ">
+
+                    ${match.status.toUpperCase()}
+
+                </div>
+
+            </div>
+
+        `;
+
+    });
 
 }
-
 
 /* =========================================================
    RESET TOURNAMENT
