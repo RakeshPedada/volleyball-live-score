@@ -1004,6 +1004,10 @@ else:
 
     apply_knockout_schedule(matches)
 
+
+    
+
+
     save_tournament_state()
 
     print(
@@ -1141,7 +1145,268 @@ def start_next_set(match):
     match["scoreA"] = 0
     match["scoreB"] = 0
 
+# =========================================================
+# TOURNAMENT QUALIFICATION
+# =========================================================
 
+def get_pool_standings(pool_name):
+
+    teams = pools.get(pool_name, [])
+
+    standings = {
+        team: {
+            "team": team,
+            "played": 0,
+            "wins": 0,
+            "losses": 0,
+            "sets_won": 0,
+            "sets_lost": 0
+        }
+        for team in teams
+    }
+
+    pool_matches = [
+        match
+        for match in matches
+        if match.get("stage") == pool_name
+    ]
+
+    for match in pool_matches:
+
+        if match.get("status") != "finished":
+            continue
+
+        team_a = match["teamA"]
+        team_b = match["teamB"]
+
+        if (
+            team_a not in standings
+            or team_b not in standings
+        ):
+            continue
+
+        standings[team_a]["played"] += 1
+        standings[team_b]["played"] += 1
+
+        standings[team_a]["sets_won"] += match.get(
+            "setsA",
+            0
+        )
+
+        standings[team_a]["sets_lost"] += match.get(
+            "setsB",
+            0
+        )
+
+        standings[team_b]["sets_won"] += match.get(
+            "setsB",
+            0
+        )
+
+        standings[team_b]["sets_lost"] += match.get(
+            "setsA",
+            0
+        )
+
+        winner = match.get("winner")
+
+        if winner == team_a:
+
+            standings[team_a]["wins"] += 1
+            standings[team_b]["losses"] += 1
+
+        elif winner == team_b:
+
+            standings[team_b]["wins"] += 1
+            standings[team_a]["losses"] += 1
+
+
+    ranking = list(
+        standings.values()
+    )
+
+    ranking.sort(
+        key=lambda team: (
+            team["wins"],
+            team["sets_won"] - team["sets_lost"],
+            team["sets_won"]
+        ),
+        reverse=True
+    )
+
+    return ranking
+
+
+def is_pool_complete(pool_name):
+
+    pool_matches = [
+        match
+        for match in matches
+        if match.get("stage") == pool_name
+    ]
+
+    if not pool_matches:
+        return False
+
+    return all(
+        match.get("status") == "finished"
+        for match in pool_matches
+    )
+
+
+def find_match_by_label(label):
+
+    return next(
+        (
+            match
+            for match in matches
+            if match.get("label") == label
+        ),
+        None
+    )
+
+def update_pool_qualification():
+
+    # =====================================================
+    # GET KNOCKOUT MATCHES
+    # =====================================================
+
+    sf1 = find_match_by_label("SF1")
+    sf2 = find_match_by_label("SF2")
+
+
+    # =====================================================
+    # POOL 1 QUALIFICATION
+    #
+    # Pool 1 #1 → SF1 Team A
+    # Pool 1 #2 → SF2 Team B
+    # =====================================================
+
+    if is_pool_complete("Pool 1"):
+
+        pool1 = get_pool_standings("Pool 1")
+
+        if len(pool1) >= 2:
+
+            if sf1:
+                sf1["teamA"] = pool1[0]["team"]
+
+            if sf2:
+                sf2["teamB"] = pool1[1]["team"]
+
+
+    # =====================================================
+    # POOL 2 QUALIFICATION
+    #
+    # Pool 2 #1 → SF2 Team A
+    # =====================================================
+
+    if is_pool_complete("Pool 2"):
+
+        pool2 = get_pool_standings("Pool 2")
+
+        if len(pool2) >= 1 and sf2:
+
+            sf2["teamA"] = pool2[0]["team"]
+
+
+    # =====================================================
+    # POOL 3 QUALIFICATION
+    #
+    # Pool 3 #1 → SF1 Team B
+    # =====================================================
+
+    if is_pool_complete("Pool 3"):
+
+        pool3 = get_pool_standings("Pool 3")
+
+        if len(pool3) >= 1 and sf1:
+
+            sf1["teamB"] = pool3[0]["team"]
+
+
+    # =====================================================
+    # UNLOCK SF1 ONLY WHEN BOTH REQUIRED POOLS COMPLETE
+    # =====================================================
+
+    if (
+        sf1
+        and is_pool_complete("Pool 1")
+        and is_pool_complete("Pool 3")
+    ):
+
+        sf1["status"] = "upcoming"
+
+
+    # =====================================================
+    # UNLOCK SF2 ONLY WHEN BOTH REQUIRED POOLS COMPLETE
+    # =====================================================
+
+    if (
+        sf2
+        and is_pool_complete("Pool 1")
+        and is_pool_complete("Pool 2")
+    ):
+
+        sf2["status"] = "upcoming"
+
+
+    # =====================================================
+    # MEN'S FINAL QUALIFICATION
+    # =====================================================
+
+    sf1 = find_match_by_label("SF1")
+    sf2 = find_match_by_label("SF2")
+    final = find_match_by_label("FINAL")
+
+
+    if (
+        sf1
+        and sf2
+        and final
+        and sf1.get("status") == "finished"
+        and sf2.get("status") == "finished"
+        and sf1.get("winner")
+        and sf2.get("winner")
+    ):
+
+        # Winner of SF1 always appears first
+        final["teamA"] = sf1["winner"]
+
+        # Winner of SF2 always appears second
+        final["teamB"] = sf2["winner"]
+
+        final["status"] = "upcoming"    
+
+
+    # =====================================================
+    # WOMEN'S FINAL QUALIFICATION
+    # =====================================================
+
+    if is_pool_complete("Women's Pool"):
+
+        womens_pool = get_pool_standings(
+            "Women's Pool"
+        )
+
+        womens_final = find_match_by_label(
+            "WOMENS_FINAL"
+        )
+
+        if (
+            womens_final
+            and len(womens_pool) >= 2
+        ):
+
+            womens_final["teamA"] = (
+                womens_pool[0]["team"]
+            )
+
+            womens_final["teamB"] = (
+                womens_pool[1]["team"]
+            )
+
+            womens_final["status"] = "upcoming"
 # =========================================================
 # HOME
 # =========================================================
@@ -1354,6 +1619,10 @@ def add_point(match_id, side):
         ):
 
             finish_match(match)
+
+                # Update semifinal / women's final
+            # qualification after a pool match finishes.
+            update_pool_qualification()    
 
         else:
 
@@ -1605,11 +1874,17 @@ def update_scoring_format():
         "success": True,
         "scoring_format": scoring_format
     })
+# =========================================================
+# APPLY EXISTING TOURNAMENT QUALIFICATION
+# =========================================================
+
+update_pool_qualification()
+save_tournament_state()
+
 
 # =========================================================
 # RUN APPLICATION
 # =========================================================
-   
 
 if __name__ == "__main__":
     app.run(
