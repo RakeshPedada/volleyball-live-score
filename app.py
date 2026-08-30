@@ -1596,20 +1596,6 @@ def update_scoring_format():
             "error": "Invalid scoring format."
         }), 400
 
-    # Prevent changing format while a match is live
-    live_match = next(
-        (
-            match
-            for match in matches
-            if match["status"] == "live"
-        ),
-        None
-    )
-
-    if live_match:
-        return jsonify({
-            "error": "Finish the live match before changing the scoring format."
-        }), 400
 
     scoring_format = new_format
 

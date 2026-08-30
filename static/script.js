@@ -1628,36 +1628,65 @@ function updateScoringFormatButtons() {
 
 }
 
-
 async function setScoringFormat(format) {
 
-    const response = await fetch(
-        "/api/scoring-format",
-        {
-            method: "POST",
+    try {
 
-            headers: {
-                "Content-Type": "application/json"
-            },
+        const response = await fetch(
+            "/api/scoring-format",
+            {
+                method: "POST",
 
-            body: JSON.stringify({
-                format: format
-            })
-        }
-    );
+                headers: {
+                    "Content-Type": "application/json"
+                },
 
-    const result =
-        await response.json();
-
-    if (!response.ok) {
-
-        alert(
-            result.error
-            || "Could not update scoring format."
+                body: JSON.stringify({
+                    format: format
+                })
+            }
         );
 
-        return;
+
+        const result = await response.json();
+
+
+        if (!response.ok) {
+
+            alert(
+                result.error ||
+                "Could not update scoring format."
+            );
+
+            return;
+        }
+
+
+        tournamentData.scoring_format =
+            result.scoring_format;
+
+
+        updateEverything();
+
+
+        console.log(
+            "Scoring format changed to:",
+            result.scoring_format
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Scoring format error:",
+            error
+        );
+
+        alert(
+            "Network error while changing scoring format."
+        );
+
     }
+
 
     
     // Update local tournament data immediately
