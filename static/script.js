@@ -1582,3 +1582,11 @@ async function setScoringFormat(format) {
     }
 
 }
+
+// Update local tournament data immediately
+tournamentData.scoring_format =
+    result.scoring_format;
+
+
+// Refresh all UI elements
+updateEverything();
