@@ -150,68 +150,95 @@
 
         </div>
 
+<!-- SCORE CONTROLS -->
 
-        <!-- SCORE CONTROLS -->
+<div
+    id="adminScoreControls"
+    class="admin-score-controls"
+>
+
+    <!-- TEAM A -->
+
+    <div class="score-team">
+
+        <h3 id="adminTeamA">
+            TEAM A
+        </h3>
 
         <div
-            id="adminScoreControls"
-            class="admin-score-controls"
+            id="adminScoreA"
+            class="admin-score"
         >
+            0
+        </div>
+
+        <button onclick="addPoint('A')">
+            +1 POINT
+        </button>
+
+        <button
+            class="undo"
+            onclick="undoPoint('A')"
+        >
+            ↩ UNDO
+        </button>
+
+    </div>
 
 
-            <!-- TEAM A -->
+    <!-- SET SCORE -->
 
-            <div class="score-team">
+    <div class="sets-box">
 
-                <h3 id="adminTeamA">
-                    TEAM A
-                </h3>
+        <div>
+            SETS
+        </div>
 
+        <strong id="adminSets">
+            0 - 0
+        </strong>
 
-                <div
-                    id="adminScoreA"
-                    class="admin-score"
-                >
-                    0
-                </div>
+        <small id="targetText">
+            Target: 25
+        </small>
 
-
-                <button onclick="addPoint('A')">
-                    +1 POINT
-                </button>
+    </div>
 
 
-                <button
-                    class="undo"
-                    onclick="undoPoint('A')"
-                >
-                    ↩ UNDO
-                </button>
+    <!-- TEAM B -->
 
-            </div>
+    <div class="score-team">
+
+        <h3 id="adminTeamB">
+            TEAM B
+        </h3>
+
+        <div
+            id="adminScoreB"
+            class="admin-score"
+        >
+            0
+        </div>
+
+        <button onclick="addPoint('B')">
+            +1 POINT
+        </button>
+
+        <button
+            class="undo"
+            onclick="undoPoint('B')"
+        >
+            ↩ UNDO
+        </button>
+
+    </div>
+
+</div>
 
 
-            <!-- SET SCORE -->
+<!-- SCORING FORMAT -->
 
-            <div class="sets-box">
-
-                <div>
-                    SETS
-                </div>
-
-
-                <strong id="adminSets">
-                    0 - 0
-                </strong>
-
-
-                <small id="targetText">
-                    Target: 25
-                </small>
-
-            </div>
-
-            <div class="scoring-format-box">
+<div class="scoring-format-box">
 
     <div class="scoring-format-title">
         SCORING FORMAT
@@ -224,15 +251,30 @@
             class="format-button active"
             onclick="setScoringFormat('25-25-15')"
         >
-            25 • 25 • 15
+            <strong>
+                25 • 25 • 15
+            </strong>
+
+            <span>
+                Sets 1 &amp; 2: 25 • Decider: 15
+            </span>
+
         </button>
+
 
         <button
             id="format151525"
             class="format-button"
             onclick="setScoringFormat('15-15-25')"
         >
-            15 • 15 • 25
+            <strong>
+                15 • 15 • 25
+            </strong>
+
+            <span>
+                Sets 1 &amp; 2: 15 • Decider: 25
+            </span>
+
         </button>
 
     </div>
@@ -240,51 +282,18 @@
 </div>
 
 
-            <!-- TEAM B -->
-
-            <div class="score-team">
-
-                <h3 id="adminTeamB">
-                    TEAM B
-                </h3>
-
-
-                <div
-                    id="adminScoreB"
-                    class="admin-score"
-                >
-                    0
-                </div>
-
-
-                <button onclick="addPoint('B')">
-                    +1 POINT
-                </button>
-
-
-                <button
-                    class="undo"
-                    onclick="undoPoint('B')"
-                >
-                    ↩ UNDO
-                </button>
-
-            </div>
-
-        </div>
-
+<!-- FORMAT DESCRIPTION -->
 
 <p
     class="admin-note"
     id="scoringFormatNote"
 >
-    Best of 3 Sets • Sets 1 & 2: Minimum 25 Points •
+    Best of 3 Sets • Sets 1 &amp; 2: Minimum 25 Points •
     Deciding Set: Minimum 15 Points •
     2 Point Lead Required
 </p>
 
-    </section>
-
+</section>
 
     <!-- =====================================================
          LIVE PAGE

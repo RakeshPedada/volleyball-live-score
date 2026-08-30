@@ -914,6 +914,7 @@ function calculateStandings(poolName) {
 
             // Total individual sets won
             setsWon: 0,
+            setsLost: 0,
 
             // Tournament points
             points: 0
@@ -956,9 +957,12 @@ function calculateStandings(poolName) {
         teamB.played++;
 
 
-        // Total sets won
+        // Total sets won and lost
         teamA.setsWon += match.setsA;
+        teamA.setsLost += match.setsB;
+
         teamB.setsWon += match.setsB;
+        teamB.setsLost += match.setsA;
 
 
         // Match winner
@@ -1134,7 +1138,7 @@ function updateStandings() {
                             </td>
 
                             <td>
-                                ${team.setsWon}
+                                ${team.setsWon} - ${team.setsLost}
                             </td>
 
                             <td>
@@ -1185,8 +1189,11 @@ function updateStandings() {
 
                                     <th>L</th>
 
-                                    <th>Sets Won</th>
-
+                                    <th>
+                                        SETS
+                                        <br>
+                                        <small>(W-L)</small>
+                                    </th>
                                     <th>PTS</th>
 
                                 </tr>
