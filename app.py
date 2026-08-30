@@ -1547,11 +1547,16 @@ def reset_tournament():
 
     global matches
 
-    # Recreate the COMPLETE tournament:
-    # 22 pool matches + 2 semi-finals + 1 final
-
+    # Create fresh tournament fixtures
     matches = create_matches()
 
+    # Apply permanent walkover results
+    apply_mahua_walkovers(matches)
+
+    # Apply semifinal and final schedule
+    apply_knockout_schedule(matches)
+
+    # Save everything to Supabase
     result = save_tournament_state()
 
     print("====================================")

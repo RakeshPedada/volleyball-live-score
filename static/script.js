@@ -516,29 +516,36 @@ async function startSelectedMatch() {
 /* =========================================================
    ADD POINT
 ========================================================= */
-
 async function addPoint(side) {
 
-    if (!selectedMatchId) return;
+    if (!selectedMatchId) {
 
+        alert("Please select a match first.");
+
+        return;
+
+    }
 
     const response = await fetch(
+
         `/api/point/${selectedMatchId}/${side}`,
+
         {
             method: "POST"
         }
+
     );
 
-
-    const result =
-        await response.json();
+    const result = await response.json();
 
 
     if (!response.ok) {
 
         alert(
+
             result.error
             || "Could not add point."
+
         );
 
         return;
@@ -546,37 +553,69 @@ async function addPoint(side) {
     }
 
 
-    await loadData();
+    // Reload latest tournament data
+    tournamentData = await (
+
+        await fetch("/api/data")
+
+    ).json();
+
+
+    // Keep the same selected match
+    const select = document.getElementById(
+
+        "matchSelect"
+
+    );
+
+    select.value = selectedMatchId;
+
+
+    // Update admin score immediately
+    updateAdminPanel();
+
+
+    // Update public pages
+    updateLiveScore();
+    updateFixtures();
+    updateStandings();
+    updateKnockout();
 
 }
-
 
 /* =========================================================
    UNDO POINT
 ========================================================= */
-
 async function undoPoint(side) {
 
-    if (!selectedMatchId) return;
+    if (!selectedMatchId) {
 
+        alert("Please select a match first.");
+
+        return;
+
+    }
 
     const response = await fetch(
+
         `/api/undo/${selectedMatchId}/${side}`,
+
         {
             method: "POST"
         }
+
     );
 
-
-    const result =
-        await response.json();
+    const result = await response.json();
 
 
     if (!response.ok) {
 
         alert(
+
             result.error
             || "Could not undo point."
+
         );
 
         return;
@@ -584,10 +623,35 @@ async function undoPoint(side) {
     }
 
 
-    await loadData();
+    // Reload latest tournament data
+    tournamentData = await (
+
+        await fetch("/api/data")
+
+    ).json();
+
+
+    // Keep same selected match
+    const select = document.getElementById(
+
+        "matchSelect"
+
+    );
+
+    select.value = selectedMatchId;
+
+
+    // Update admin display
+    updateAdminPanel();
+
+
+    // Update other displays
+    updateLiveScore();
+    updateFixtures();
+    updateStandings();
+    updateKnockout();
 
 }
-
 
 /* =========================================================
    LIVE SCORE
