@@ -428,7 +428,8 @@ def save_tournament_state():
 
     tournament_state = {
         "pools": pools,
-        "matches": matches
+        "matches": matches,
+        "scoring_format": scoring_format
     }
 
     # upsert guarantees that row id=1 is created or replaced
@@ -471,10 +472,18 @@ def load_tournament_state():
 
     return data
 
+# =========================================================
+# SCORING FORMAT
+# =========================================================
+
+scoring_format = "25-25-15"
+
 
 # =========================================================
 # LOAD TOURNAMENT ON SERVER START
 # =========================================================
+
+
 
 saved_state = load_tournament_state()
 
@@ -483,6 +492,11 @@ if saved_state:
     pools = saved_state.get(
         "pools",
         pools
+    )
+
+    scoring_format = saved_state.get(
+         "scoring_format",
+        scoring_format
     )
 
     print(
@@ -542,12 +556,20 @@ def get_target_score(match):
 
     current_set = get_current_set_number(match)
 
-    # Third / deciding set
-    if current_set == 3:
-        return 15
+    if scoring_format == "15-15-25":
 
-    # Set 1 and Set 2
-    return 25
+        # Set 1 and Set 2
+        if current_set in [1, 2]:
+            return 15
+
+        # Deciding Set
+        return 25
+
+    # Default: 25-25-15
+    if current_set in [1, 2]:
+        return 25
+
+    return 15
 
 
 def check_set_finished(match):
@@ -560,6 +582,37 @@ def check_set_finished(match):
     highest_score = max(score_a, score_b)
 
     score_difference = abs(score_a - score_b)
+
+
+    # =====================================================
+    # DIRECT WIN / MERCY RULE
+    # =====================================================
+
+    # For a 15-point set:
+    # A team wins immediately at 7-0
+    if target == 15:
+
+        if (
+            highest_score >= 7
+            and min(score_a, score_b) == 0
+        ):
+            return True
+
+
+    # For a 25-point set:
+    # A team wins immediately at 12-0
+    if target == 25:
+
+        if (
+            highest_score >= 12
+            and min(score_a, score_b) == 0
+        ):
+            return True
+
+
+    # =====================================================
+    # NORMAL VOLLEYBALL SET RULE
+    # =====================================================
 
     return (
         highest_score >= target
@@ -704,7 +757,8 @@ def get_data():
 
     return jsonify({
         "pools": pools,
-        "matches": matches
+        "matches": matches,
+        "scoring_format": scoring_format
     })
 
 
@@ -1030,6 +1084,54 @@ def reset_tournament():
         "matches_count": len(matches)
     })
 
+
+# =========================================================
+# UPDATE SCORING FORMAT
+# =========================================================
+
+@app.route(
+    "/api/scoring-format",
+    methods=["POST"]
+)
+def update_scoring_format():
+
+    global scoring_format
+
+    data = request.get_json()
+
+    new_format = data.get("format")
+
+    if new_format not in [
+        "25-25-15",
+        "15-15-25"
+    ]:
+        return jsonify({
+            "error": "Invalid scoring format."
+        }), 400
+
+    # Prevent changing format while a match is live
+    live_match = next(
+        (
+            match
+            for match in matches
+            if match["status"] == "live"
+        ),
+        None
+    )
+
+    if live_match:
+        return jsonify({
+            "error": "Finish the live match before changing the scoring format."
+        }), 400
+
+    scoring_format = new_format
+
+    save_tournament_state()
+
+    return jsonify({
+        "success": True,
+        "scoring_format": scoring_format
+    })
 
 # =========================================================
 # RUN APPLICATION

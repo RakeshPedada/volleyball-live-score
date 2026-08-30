@@ -3,6 +3,30 @@ let selectedMatchId = null;
 let isAdmin = false;
 
 
+function getTargetScore(match) {
+
+    const completedSets =
+        match.setHistory.length;
+
+    const format =
+        tournamentData.scoring_format
+        || "25-25-15";
+
+    if (format === "15-15-25") {
+
+        return completedSets === 2
+            ? 25
+            : 15;
+
+    }
+
+    return completedSets === 2
+        ? 15
+        : 25;
+
+}
+
+
 /* =========================================================
    LOAD DATA
 ========================================================= */
@@ -41,6 +65,7 @@ function updateEverything() {
     updateStandings();
     updateKnockout();
     updateAdminPanel();
+    updateScoringFormatButtons();
 
 }
 
@@ -409,22 +434,16 @@ function updateAdminPanel() {
         `${match.setsA} - ${match.setsB}`;
 
 
-    const completedSets =
-        match.setHistory.length;
-
-
     const target =
-        completedSets === 2
-            ? 15
-            : 25;
+        getTargetScore(match);
 
 
-    document
-        .getElementById("targetText")
-        .textContent =
-        `Target: ${target}`;
+        document
+            .getElementById("targetText")
+            .textContent =
+            `Target: ${target}`;
 
-}
+    }
 
 
 /* =========================================================
@@ -595,17 +614,13 @@ function updateLiveScore() {
     status.classList.add("active");
 
 
-    const currentSet =
-        liveMatch.setHistory.length + 1;
+const currentSet =
+    liveMatch.setHistory.length + 1;
 
+const target =
+    getTargetScore(liveMatch);
 
-    const target =
-        currentSet === 3
-            ? 15
-            : 25;
-
-
-    let history = "";
+let history = "";
 
 
     if (liveMatch.setHistory.length > 0) {
@@ -897,11 +912,11 @@ function calculateStandings(poolName) {
             won: 0,
             lost: 0,
 
-            setsFor: 0,
-            setsAgainst: 0,
+            // Total individual sets won
+            setsWon: 0,
 
-            pointsFor: 0,
-            pointsAgainst: 0
+            // Tournament points
+            points: 0
 
         }));
 
@@ -910,7 +925,8 @@ function calculateStandings(poolName) {
         tournamentData.matches.filter(
             match =>
                 match.stage === poolName
-                && match.status === "finished"
+                &&
+                match.status === "finished"
         );
 
 
@@ -930,108 +946,117 @@ function calculateStandings(poolName) {
             );
 
 
-        if (!teamA || !teamB) return;
+        if (!teamA || !teamB) {
+            return;
+        }
 
 
+        // Matches played
         teamA.played++;
         teamB.played++;
 
 
-        teamA.setsFor +=
-            match.setsA;
-
-        teamA.setsAgainst +=
-            match.setsB;
+        // Total sets won
+        teamA.setsWon += match.setsA;
+        teamB.setsWon += match.setsB;
 
 
-        teamB.setsFor +=
-            match.setsB;
-
-        teamB.setsAgainst +=
-            match.setsA;
-
-
-        if (
-            match.winner === match.teamA
-        ) {
+        // Match winner
+        if (match.winner === match.teamA) {
 
             teamA.won++;
             teamB.lost++;
 
-        } else {
+
+            // 2-0 win = 3 points
+            // 2-1 win = 2 points
+            if (
+                match.setsA === 2
+                &&
+                match.setsB === 0
+            ) {
+
+                teamA.points += 3;
+
+            } else if (
+                match.setsA === 2
+                &&
+                match.setsB === 1
+            ) {
+
+                teamA.points += 2;
+
+            }
+
+
+        } else if (match.winner === match.teamB) {
 
             teamB.won++;
             teamA.lost++;
 
+
+            // 2-0 win = 3 points
+            // 2-1 win = 2 points
+            if (
+                match.setsB === 2
+                &&
+                match.setsA === 0
+            ) {
+
+                teamB.points += 3;
+
+            } else if (
+                match.setsB === 2
+                &&
+                match.setsA === 1
+            ) {
+
+                teamB.points += 2;
+
+            }
+
         }
-
-
-        match.setHistory.forEach(set => {
-
-            teamA.pointsFor += set.a;
-            teamA.pointsAgainst += set.b;
-
-            teamB.pointsFor += set.b;
-            teamB.pointsAgainst += set.a;
-
-        });
 
     });
 
 
+    // =====================================================
+    // SORT STANDINGS
+    // =====================================================
+
     table.sort((a, b) => {
 
+        // 1. Tournament points
+        if (b.points !== a.points) {
+
+            return (
+                b.points - a.points
+            );
+
+        }
+
+
+        // 2. Matches won
         if (b.won !== a.won) {
 
-            return b.won - a.won;
-
-        }
-
-
-        const setDifferenceA =
-            a.setsFor - a.setsAgainst;
-
-        const setDifferenceB =
-            b.setsFor - b.setsAgainst;
-
-
-        if (
-            setDifferenceB
-            !==
-            setDifferenceA
-        ) {
-
             return (
-                setDifferenceB
-                -
-                setDifferenceA
+                b.won - a.won
             );
 
         }
 
 
-        const pointDifferenceA =
-            a.pointsFor - a.pointsAgainst;
-
-        const pointDifferenceB =
-            b.pointsFor - b.pointsAgainst;
-
-
-        if (
-            pointDifferenceB
-            !==
-            pointDifferenceA
-        ) {
+        // 3. Total sets won
+        if (b.setsWon !== a.setsWon) {
 
             return (
-                pointDifferenceB
-                -
-                pointDifferenceA
+                b.setsWon - a.setsWon
             );
 
         }
 
 
+        // 4. Alphabetical order
         return a.team.localeCompare(
             b.team
         );
@@ -1043,6 +1068,10 @@ function calculateStandings(poolName) {
 
 }
 
+
+/* =========================================================
+   DISPLAY STANDINGS
+========================================================= */
 
 function updateStandings() {
 
@@ -1062,6 +1091,7 @@ function updateStandings() {
     ]
         .forEach(poolName => {
 
+
             const table =
                 calculateStandings(poolName);
 
@@ -1077,6 +1107,7 @@ function updateStandings() {
 
             table.forEach(
                 (team, index) => {
+
 
                     rows += `
 
@@ -1103,19 +1134,13 @@ function updateStandings() {
                             </td>
 
                             <td>
-                                ${
-                                    team.setsFor
-                                    -
-                                    team.setsAgainst
-                                }
+                                ${team.setsWon}
                             </td>
 
                             <td>
-                                ${
-                                    team.pointsFor
-                                    -
-                                    team.pointsAgainst
-                                }
+                                <strong>
+                                    ${team.points}
+                                </strong>
                             </td>
 
                         </tr>
@@ -1135,39 +1160,49 @@ function updateStandings() {
                     </h2>
 
 
-                    <table>
-
-                        <thead>
-
-                            <tr>
-
-                                <th>#</th>
-                                <th>Team</th>
-                                <th>P</th>
-                                <th>W</th>
-                                <th>L</th>
-                                <th>Set +/-</th>
-                                <th>Point +/-</th>
-
-                            </tr>
-
-                        </thead>
-
-
-                        <tbody>
-
-                            ${rows}
-
-                        </tbody>
-
-                    </table>
-
-
-                    <p class="qualify-text">
+                    <div class="qualification-note">
 
                         ${qualificationText}
 
-                    </p>
+                    </div>
+
+
+                    <div class="table-wrapper">
+
+                        <table>
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>#</th>
+
+                                    <th>Team</th>
+
+                                    <th>P</th>
+
+                                    <th>W</th>
+
+                                    <th>L</th>
+
+                                    <th>Sets Won</th>
+
+                                    <th>PTS</th>
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody>
+
+                                ${rows}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
 
                 </div>
 
@@ -1176,7 +1211,6 @@ function updateStandings() {
         });
 
 }
-
 
 /* =========================================================
    KNOCKOUT
@@ -1325,3 +1359,99 @@ setInterval(
     loadData,
     3000
 );
+function updateScoringFormatButtons() {
+
+    if (!tournamentData) {
+        return;
+    }
+
+    const format =
+        tournamentData.scoring_format
+        || "25-25-15";
+
+    const button252515 =
+        document.getElementById("format252515");
+
+    const button151525 =
+        document.getElementById("format151525");
+
+    const note =
+        document.getElementById("scoringFormatNote");
+
+
+    // Update active scoring format button
+    if (button252515 && button151525) {
+
+        button252515.classList.toggle(
+            "active",
+            format === "25-25-15"
+        );
+
+        button151525.classList.toggle(
+            "active",
+            format === "15-15-25"
+        );
+
+    }
+
+
+    // Update scoring format description
+    if (note) {
+
+        if (format === "15-15-25") {
+
+            note.textContent =
+                "Best of 3 Sets • Sets 1 & 2: Minimum 15 Points • Deciding Set: Minimum 25 Points • 2 Point Lead Required";
+
+        } else {
+
+            note.textContent =
+                "Best of 3 Sets • Sets 1 & 2: Minimum 25 Points • Deciding Set: Minimum 15 Points • 2 Point Lead Required";
+
+        }
+
+    }
+
+}
+
+
+async function setScoringFormat(format) {
+
+    const response = await fetch(
+        "/api/scoring-format",
+        {
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                format: format
+            })
+        }
+    );
+
+    const result =
+        await response.json();
+
+    if (!response.ok) {
+
+        alert(
+            result.error
+            || "Could not update scoring format."
+        );
+
+        return;
+    }
+
+
+    // Update local tournament data immediately
+    tournamentData.scoring_format =
+        result.scoring_format;
+
+
+    // Refresh all UI elements
+    updateEverything();
+
+}
