@@ -1603,3 +1603,4 @@ async function setScoringFormat(format) {
     // Refresh all UI elements
     updateEverything();
 
+    }
