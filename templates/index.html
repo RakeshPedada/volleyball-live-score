@@ -145,6 +145,10 @@
     🔄 RESTART SET
 </button>
 
+<button onclick="openFixtureEditor()">
+    ✏️ EDIT FIXTURE
+</button>
+
             <button
                 class="reset-btn"
                 onclick="resetTournament()"
@@ -153,6 +157,120 @@
             </button>
 
         </div>
+
+
+        <!-- =====================================================
+     FIXTURE EDITOR
+====================================================== -->
+
+<div
+    id="fixtureEditor"
+    class="fixture-editor hidden"
+>
+
+    <h3>✏️ EDIT SELECTED FIXTURE</h3>
+
+    <div class="fixture-edit-grid">
+
+        <div>
+            <label>Team A</label>
+            <input
+                type="text"
+                id="editTeamA"
+                placeholder="Team A"
+            >
+        </div>
+
+        <div>
+            <label>Team B</label>
+            <input
+                type="text"
+                id="editTeamB"
+                placeholder="Team B"
+            >
+        </div>
+
+        <div>
+    <label>Stage / Pool</label>
+    <input
+        type="text"
+        id="editPool"
+        placeholder="Stage / Pool"
+    >
+</div>
+
+        <div>
+            <label>Date</label>
+            <input
+                type="text"
+                id="editDate"
+                placeholder="Example: 3 September 2026"
+            >
+        </div>
+
+        <div>
+            <label>Time</label>
+            <input
+                type="text"
+                id="editTime"
+                placeholder="Example: 4:30 – 5:30 PM"
+            >
+        </div>
+
+        <div>
+            <label>Session</label>
+
+            <select id="editSession">
+                <option value="Morning Session">
+                    Morning Session
+                </option>
+
+                <option value="Evening Session">
+                    Evening Session
+                </option>
+            </select>
+
+        </div>
+<div>
+    <label>Status</label>
+
+    <select id="editStatus">
+
+        <option value="upcoming">
+            Upcoming
+        </option>
+
+        <option value="rescheduled">
+            Rescheduled
+        </option>
+
+    </select>
+
+</div>
+
+    </div>
+
+
+    <div class="fixture-editor-actions">
+
+        <button
+            class="save-fixture-btn"
+            onclick="saveFixtureEdit()"
+        >
+            💾 SAVE CHANGES
+        </button>
+
+
+        <button
+            class="cancel-fixture-btn"
+            onclick="closeFixtureEditor()"
+        >
+            ✖ CANCEL
+        </button>
+
+    </div>
+
+</div>
 
 <!-- SCORE CONTROLS -->
 

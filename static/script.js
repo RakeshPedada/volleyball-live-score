@@ -515,6 +515,279 @@ async function startSelectedMatch() {
 
 }
 
+/* =========================================================
+   FIXTURE EDITOR
+========================================================= */
+
+function openFixtureEditor() {
+
+    const match = getSelectedMatch();
+
+    if (!match) {
+
+        alert("Please select a match first.");
+
+        return;
+
+    }
+
+
+    if (match.status === "live") {
+
+        alert(
+            "A live match cannot be edited. Finish or stop the match first."
+        );
+
+        return;
+
+    }
+
+
+    document
+        .getElementById("editTeamA")
+        .value =
+        match.teamA || "";
+
+
+    document
+        .getElementById("editTeamB")
+        .value =
+        match.teamB || "";
+
+
+    document
+        .getElementById("editPool")
+        .value =
+        match.stage || "";
+
+
+    document
+        .getElementById("editDate")
+        .value =
+        match.date || "";
+
+
+    document
+        .getElementById("editTime")
+        .value =
+        match.time || "";
+
+
+    document
+        .getElementById("editSession")
+        .value =
+        match.session || "Morning Session";
+
+
+    document
+        .getElementById("editStatus")
+        .value =
+        match.rescheduled
+            ? "rescheduled"
+            : "upcoming";
+
+
+    document
+        .getElementById("fixtureEditor")
+        .classList
+        .remove("hidden");
+
+}
+
+
+
+/* =========================================================
+   CLOSE FIXTURE EDITOR
+========================================================= */
+
+function closeFixtureEditor() {
+
+    document
+        .getElementById("fixtureEditor")
+        .classList
+        .add("hidden");
+
+}
+
+
+
+/* =========================================================
+   SAVE FIXTURE EDIT
+========================================================= */
+
+async function saveFixtureEdit() {
+
+    const match = getSelectedMatch();
+
+
+    if (!match) {
+
+        alert("Please select a match first.");
+
+        return;
+
+    }
+
+
+    const teamA =
+
+        document
+        .getElementById("editTeamA")
+        .value
+        .trim();
+
+
+    const teamB =
+
+        document
+        .getElementById("editTeamB")
+        .value
+        .trim();
+
+
+    const stage =
+
+        document
+        .getElementById("editPool")
+        .value
+        .trim();
+
+
+    const date =
+
+        document
+        .getElementById("editDate")
+        .value
+        .trim();
+
+
+    const time =
+
+        document
+        .getElementById("editTime")
+        .value
+        .trim();
+
+
+    const session =
+
+        document
+        .getElementById("editSession")
+        .value;
+
+
+    const status =
+
+        document
+        .getElementById("editStatus")
+        .value;
+
+
+    if (!teamA || !teamB) {
+
+        alert(
+            "Team A and Team B are required."
+        );
+
+        return;
+
+    }
+
+
+    const response = await fetch(
+
+        `/api/edit-fixture/${match.id}`,
+
+        {
+
+            method: "POST",
+
+            headers: {
+
+                "Content-Type":
+                    "application/json"
+
+            },
+
+            body: JSON.stringify({
+
+                teamA: teamA,
+
+                teamB: teamB,
+
+                stage: stage,
+
+                date: date,
+
+                time: time,
+
+                session: session,
+
+                rescheduled:
+                    status === "rescheduled"
+
+            })
+
+        }
+
+    );
+
+
+    const result =
+        await response.json();
+
+
+    if (!response.ok) {
+
+        alert(
+
+            result.error
+            || "Could not update fixture."
+
+        );
+
+        return;
+
+    }
+
+
+    alert(
+        "✅ Fixture updated successfully!"
+    );
+
+
+    closeFixtureEditor();
+
+
+    const currentMatchId =
+        selectedMatchId;
+
+
+    await loadData();
+
+
+    selectedMatchId =
+        currentMatchId;
+
+
+    updateMatchSelect();
+
+
+    updateAdminPanel();
+
+
+    updateFixtures();
+
+
+    updateStandings();
+
+
+    updateKnockout();
+
+
+    updateLiveScore();
+
+}
 
 /* =========================================================
    ADD POINT

@@ -1871,6 +1871,108 @@ def schedule_fixtures():
 
 
 # =========================================================
+# EDIT FIXTURE
+# =========================================================
+
+@app.route(
+    "/api/edit-fixture/<int:match_id>",
+    methods=["POST"]
+)
+@admin_required
+def edit_fixture(match_id):
+
+    match = find_match(match_id)
+
+    if not match:
+
+        return jsonify({
+            "error": "Match not found"
+        }), 404
+
+
+    data = request.get_json(silent=True) or {}
+
+
+    # =====================================================
+    # SAFETY: DO NOT EDIT A LIVE MATCH
+    # =====================================================
+
+    if match.get("status") == "live":
+
+        return jsonify({
+            "error": "A live match cannot be edited. Finish or stop the match first."
+        }), 400
+
+
+    # =====================================================
+    # EDIT FIXTURE DETAILS
+    # =====================================================
+
+    team_a = data.get("teamA")
+    team_b = data.get("teamB")
+    stage = data.get("stage")
+    match_date = data.get("date")
+    match_time = data.get("time")
+    session_name = data.get("session")
+
+
+    if team_a:
+
+        match["teamA"] = team_a
+
+
+    if team_b:
+
+        match["teamB"] = team_b
+
+
+    if stage:
+
+        match["stage"] = stage
+
+
+    if match_date:
+
+        match["date"] = match_date
+
+
+    if match_time:
+
+        match["time"] = match_time
+
+
+    if session_name:
+
+        match["session"] = session_name
+
+
+    # =====================================================
+    # MARK AS RESCHEDULED
+    # =====================================================
+
+    if data.get("rescheduled") is True:
+
+        match["rescheduled"] = True
+
+
+    # =====================================================
+    # SAVE TO SUPABASE
+    # =====================================================
+
+    save_tournament_state()
+
+
+    return jsonify({
+
+        "success": True,
+
+        "message": "Fixture updated successfully",
+
+        "match": match
+
+    })
+
+# =========================================================
 # RESET TOURNAMENT
 # =========================================================
 
