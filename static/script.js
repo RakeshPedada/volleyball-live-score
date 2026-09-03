@@ -32,9 +32,14 @@ function getMatchStatusText(match) {
         return "🚫 WALKOVER";
     }
 
-    if (match.status === "finished" ||
-        match.status === "completed") {
+    if (match.rescheduled === true) {
+        return "🔄 RESCHEDULED";
+    }
 
+    if (
+        match.status === "finished" ||
+        match.status === "completed"
+    ) {
         return "FINISHED";
     }
 
@@ -48,8 +53,6 @@ function getMatchStatusText(match) {
 
     return "UPCOMING";
 }
-
-
 /* =========================================================
    LOAD DATA
 ========================================================= */
@@ -653,6 +656,97 @@ async function undoPoint(side) {
 
 }
 
+
+/* =========================================================
+   RESTART CURRENT SET
+========================================================= */
+
+async function restartSelectedSet() {
+
+    if (!selectedMatchId) {
+
+        alert("Please select a match first.");
+        return;
+
+    }
+
+
+    const match = getSelectedMatch();
+
+    if (!match) {
+
+        alert("Match not found.");
+        return;
+
+    }
+
+
+    if (match.status !== "live") {
+
+        alert("Only a live match can restart its current set.");
+        return;
+
+    }
+
+
+    const confirmed = confirm(
+        "Restart the current set?\n\n" +
+        "Current set scores will be reset to 0 - 0.\n" +
+        "Previously completed sets will remain unchanged."
+    );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const response = await fetch(
+            `/api/restart-set/${selectedMatchId}`,
+            {
+                method: "POST"
+            }
+        );
+
+
+        const result = await response.json();
+
+
+        if (!response.ok) {
+
+            alert(
+                result.error ||
+                "Could not restart the current set."
+            );
+
+            return;
+
+        }
+
+
+        await loadData();
+
+
+    } catch (error) {
+
+        console.error(
+            "Restart set error:",
+            error
+        );
+
+        alert(
+            "Network error while restarting the set."
+        );
+
+    }
+
+}
+
+
 /* =========================================================
    LIVE SCORE
 ========================================================= */
@@ -935,7 +1029,12 @@ function updateFixtures() {
                     const matchTime = match.walkover
                         ? "🚫 WALKOVER"
                         : (match.time || "TBA");
+  
 
+                        const statusClass =
+                            match.rescheduled === true
+                                ? "rescheduled"
+                                : match.status;
 
                     container.innerHTML += `
 
@@ -969,22 +1068,35 @@ function updateFixtures() {
                             </div>
 
 
-                            <div class="match-status ${match.status}">
+                            <div class="match-status ${statusClass}">
 
                                 ${getMatchStatusText(match)}
 
                             </div>
 
-                            ${match.walkover ? `
+                          ${match.status === "finished" && match.winner ? `
 
-                            <div class="walkover-result">
+    <div class="winner-result">
 
-                                🏆 WINNER:
-                                <strong>${match.winner}</strong>
+        <span class="winner-icon">
+            🏆
+        </span>
 
-                            </div>
+        <div class="winner-details">
 
-                        ` : ""}
+            <span class="winner-label">
+                MATCH WINNER
+            </span>
+
+            <strong>
+                ${match.winner}
+            </strong>
+
+        </div>
+
+    </div>
+
+` : ""}
 
                         </div>
 
@@ -1635,15 +1747,8 @@ async function setScoringFormat(format) {
 
     }
 
-
-// Update local tournament data immediately
-tournamentData.scoring_format =
-    result.scoring_format;
-
-
-// Refresh all UI elements
-updateEverything();
 }
+
 
 document.addEventListener("DOMContentLoaded", async () => {
 

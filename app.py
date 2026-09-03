@@ -4,6 +4,8 @@ from itertools import combinations
 
 from flask import Flask, render_template, jsonify, request, session
 from supabase import create_client
+from dotenv import load_dotenv
+load_dotenv()
 
 
 # =========================================================
@@ -290,53 +292,50 @@ def create_matches():
             "Evening Session"
         ),
 
+# =================================================
+# 31 AUGUST 2026 - MORNING SESSION
+# =================================================
 
-        # =================================================
-        # 31 AUGUST 2026 - MORNING SESSION
-        # =================================================
+(
+    "Women's Pool",
+    "Team Rushh",
+    "Disciples",
+    "31 August 2026",
+    "5:00 – 5:45 AM",
+    "Morning Session"
+),
 
-        (
-            "Women's Pool",
-            "Team Rushh",
-            "Disciples",
-            "31 August 2026",
-            "5:00 – 5:45 AM",
-            "Morning Session"
-        ),
+(
+    "Pool 3",
+    "The Disciples",
+    "PhD.",
+    "31 August 2026",
+    "5:50 – 6:30 AM",
+    "Morning Session"
+),
 
-        (
-            "Pool 3",
-            "The Disciples",
-            "PhD.",
-            "31 August 2026",
-            "5:50 – 6:30 AM",
-            "Morning Session"
-        ),
-
-        (
-            "Pool 1",
-            "Tribal Boys",
-            "Predators",
-            "31 August 2026",
-            "6:40 – 7:20 AM",
-            "Morning Session"
-        ),
-
-
-        # =================================================
-        # 31 AUGUST 2026 - EVENING SESSION
-        # =================================================
-
-        (
-            "Pool 3",
-            "The Disciples",
-            "Null Scapes",
-            "31 August 2026",
-            "4:30 – 5:30 PM",
-            "Evening Session"
-        ),
+(
+    "Pool 3",
+    "The Disciples",
+    "Null Scapes",
+    "31 August 2026",
+    "6:40 – 7:20 AM",
+    "Morning Session"
+),
 
 
+# =================================================
+# 31 AUGUST 2026 - EVENING SESSION
+# =================================================
+
+(
+    "Pool 1",
+    "Tribal Boys",
+    "Predators",
+    "31 August 2026",
+    "4:30 – 5:30 PM",
+    "Evening Session"
+),
         # =================================================
         # 1 SEPTEMBER 2026 - MORNING SESSION
         # =================================================
@@ -546,7 +545,7 @@ def create_matches():
         create_match(
             match_id,
             "Semi Final",
-            "Pool 1 #1",
+            "Pool 1 #2",
             "Pool 3 #1",
             status="locked",
             label="SF1",
@@ -572,7 +571,7 @@ def create_matches():
             match_id,
             "Semi Final",
             "Pool 2 #1",
-            "Pool 1 #2",
+            "Pool 1 #1",
             status="locked",
             label="SF2",
 
@@ -747,6 +746,8 @@ scoring_format = "25-25-15"
 # =========================================================
 
 saved_state = load_tournament_state()
+
+
 
 
 # =========================================================
@@ -999,12 +1000,45 @@ else:
     # =========================================================
     # ALWAYS APPLY CONFIRMED TOURNAMENT UPDATES
     # =========================================================
-
     apply_mahua_walkovers(matches)
 
     apply_knockout_schedule(matches)
 
 
+    # =================================================
+    # RESCHEDULED MATCHES - 31 AUGUST 2026
+    # =================================================
+
+    for match in matches:
+# Tribal Boys vs Predators → Rescheduled to Evening
+
+        if (
+            match.get("teamA") == "Tribal Boys"
+            and match.get("teamB") == "Predators"
+            and match.get("date") == "31 August 2026"
+        ):
+
+            match["time"] = "4:30 – 5:30 PM"
+            match["session"] = "Evening Session"
+
+            # Show as rescheduled
+            match["rescheduled"] = True
+
+          
+
+        # The Disciples vs Null Scapes → Morning
+        elif (
+            match.get("teamA") == "The Disciples"
+            and match.get("teamB") == "Null Scapes"
+            and match.get("date") == "31 August 2026"
+        ):
+
+            match["time"] = "6:40 – 7:20 AM"
+            match["session"] = "Morning Session"
+            match["rescheduled"] = True
+
+
+   
     
 
 
@@ -1278,8 +1312,8 @@ def update_pool_qualification():
     # =====================================================
     # POOL 1 QUALIFICATION
     #
-    # Pool 1 #1 → SF1 Team A
-    # Pool 1 #2 → SF2 Team B
+    # Pool 1 #2 → SF1 Team A
+    # Pool 1 #1 → SF2 Team B
     # =====================================================
 
     if is_pool_complete("Pool 1"):
@@ -1289,10 +1323,10 @@ def update_pool_qualification():
         if len(pool1) >= 2:
 
             if sf1:
-                sf1["teamA"] = pool1[0]["team"]
+                sf1["teamA"] = pool1[1]["team"]
 
             if sf2:
-                sf2["teamB"] = pool1[1]["team"]
+                sf2["teamB"] = pool1[0]["team"]
 
 
     # =====================================================
@@ -1690,6 +1724,39 @@ def undo_point(match_id, side):
 
 
 # =========================================================
+# RESTART CURRENT SET
+# =========================================================
+
+@app.route(
+    "/api/restart-set/<int:match_id>",
+    methods=["POST"]
+)
+@admin_required
+def restart_set(match_id):
+
+    match = find_match(match_id)
+
+    if not match:
+        return jsonify({
+            "error": "Match not found"
+        }), 404
+
+    if match["status"] != "live":
+        return jsonify({
+            "error": "Only a live match can restart its current set"
+        }), 400
+
+    # Reset only the current set.
+    # Previous completed sets remain unchanged.
+    match["scoreA"] = 0
+    match["scoreB"] = 0
+
+    save_tournament_state()
+
+    return jsonify(match)
+
+
+# =========================================================
 # SCHEDULE / ADD FUTURE FIXTURES WITHOUT RESETTING SCORES
 # =========================================================
 
@@ -1828,6 +1895,9 @@ def reset_tournament():
     # Save everything to Supabase
     result = save_tournament_state()
 
+
+    update_pool_qualification()
+    save_tournament_state()
     print("====================================")
     print("TOURNAMENT RESET COMPLETED")
     print("Total matches:", len(matches))
