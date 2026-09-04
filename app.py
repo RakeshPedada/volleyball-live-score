@@ -1073,65 +1073,89 @@ def get_current_set_number(match):
 
 
 def get_target_score(match):
-
     current_set = get_current_set_number(match)
 
-    if scoring_format == "15-15-25":
+    # =====================================================
+    # KNOCKOUT MATCHES
+    # SF1, SF2, Men's Final, Women's Final
+    #
+    # Set 1 = 25
+    # Set 2 = 25
+    # Set 3 = 21
+    # =====================================================
 
-        # Set 1 and Set 2
+    knockout_stages = [
+        "Semi Final",
+        "Final",
+        "Women's Final"
+    ]
+
+    if match.get("stage") in knockout_stages:
+        if current_set in [1, 2]:
+            return 25
+        return 21
+
+    # =====================================================
+    # POOL MATCHES
+    #
+    # Existing scoring format remains unchanged.
+    # Default = 25-25-15
+    # =====================================================
+
+    if scoring_format == "15-15-25":
         if current_set in [1, 2]:
             return 15
-
-        # Deciding Set
         return 25
 
     # Default: 25-25-15
     if current_set in [1, 2]:
         return 25
-
     return 15
 
 
 def check_set_finished(match):
-
     target = get_target_score(match)
 
     score_a = match["scoreA"]
     score_b = match["scoreB"]
 
     highest_score = max(score_a, score_b)
-
     score_difference = abs(score_a - score_b)
 
-
     # =====================================================
-    # DIRECT WIN / MERCY RULE
+    # DIRECT WIN RULES
     # =====================================================
 
-    # For a 15-point set:
-    # A team wins immediately at 7-0
+    # 15-point set
+    # Direct win at 7-0
     if target == 15:
-
         if (
             highest_score >= 7
             and min(score_a, score_b) == 0
         ):
             return True
 
-
-    # For a 25-point set:
-    # A team wins immediately at 12-0
+    # 25-point set
+    # Direct win at 12-0
     if target == 25:
-
         if (
             highest_score >= 12
             and min(score_a, score_b) == 0
         ):
             return True
 
+    # 21-point knockout deciding set
+    # Direct win at 11-0
+    if target == 21:
+        if (
+            highest_score >= 11
+            and min(score_a, score_b) == 0
+        ):
+            return True
 
     # =====================================================
-    # NORMAL VOLLEYBALL SET RULE
+    # NORMAL SET WIN
+    # Target score + 2 point lead
     # =====================================================
 
     return (
@@ -1175,9 +1199,114 @@ def finish_match(match):
 
 
 def start_next_set(match):
+    # =====================================================
+    # SAFETY CHECK
+    #
+    # Best-of-3 means:
+    # - 2 sets won = match finished
+    # - 3 completed sets = match finished
+    #
+    # Never start Set 4.
+    # =====================================================
 
+    if (
+        match.get("setsA", 0) >= 2
+        or match.get("setsB", 0) >= 2
+        or len(match.get("setHistory", [])) >= 3
+    ):
+        finish_match(match)
+        return
+
+    # Start the next set
     match["scoreA"] = 0
     match["scoreB"] = 0
+
+def repair_invalid_knockout_matches():
+    """
+    Repair any old knockout match that has already exceeded
+    the maximum of 3 sets.
+
+    Best of 3:
+        - first team to 2 sets wins
+        - maximum 3 sets
+    """
+
+    repaired = False
+
+    knockout_stages = [
+        "Semi Final",
+        "Final",
+        "Women's Final"
+    ]
+
+    for match in matches:
+
+        # Only knockout matches
+        if match.get("stage") not in knockout_stages:
+            continue
+
+        history = match.get("setHistory", [])
+
+        # Nothing to repair
+        if len(history) < 3:
+            continue
+
+        # Already correctly finished
+        if match.get("status") == "finished":
+            continue
+
+        # -----------------------------------------------
+        # Recalculate the result from set history.
+        # Stop at the FIRST team reaching 2 sets.
+        # -----------------------------------------------
+
+        sets_a = 0
+        sets_b = 0
+        valid_history = []
+
+        for completed_set in history:
+
+            score_a = completed_set.get("a", 0)
+            score_b = completed_set.get("b", 0)
+
+            valid_history.append({
+                "a": score_a,
+                "b": score_b
+            })
+
+            if score_a > score_b:
+                sets_a += 1
+            elif score_b > score_a:
+                sets_b += 1
+
+            # First team to 2 wins
+            if sets_a >= 2 or sets_b >= 2:
+                break
+
+        # -----------------------------------------------
+        # If a valid winner was found, repair the match.
+        # -----------------------------------------------
+
+        if sets_a >= 2 or sets_b >= 2:
+
+            match["setHistory"] = valid_history
+
+            match["setsA"] = sets_a
+            match["setsB"] = sets_b
+
+            match["scoreA"] = 0
+            match["scoreB"] = 0
+
+            match["status"] = "finished"
+
+            if sets_a > sets_b:
+                match["winner"] = match["teamA"]
+            else:
+                match["winner"] = match["teamB"]
+
+            repaired = True
+
+    return repaired   
 
 # =========================================================
 # TOURNAMENT QUALIFICATION
@@ -1308,80 +1437,50 @@ def update_pool_qualification():
     sf1 = find_match_by_label("SF1")
     sf2 = find_match_by_label("SF2")
 
-
     # =====================================================
-    # POOL 1 QUALIFICATION
+    # MEN'S SEMIFINAL QUALIFICATION
     #
-    # Pool 1 #2 → SF1 Team A
-    # Pool 1 #1 → SF2 Team B
-    # =====================================================
-
-    if is_pool_complete("Pool 1"):
-
-        pool1 = get_pool_standings("Pool 1")
-
-        if len(pool1) >= 2:
-
-            if sf1:
-                sf1["teamA"] = pool1[1]["team"]
-
-            if sf2:
-                sf2["teamB"] = pool1[0]["team"]
-
-
-    # =====================================================
-    # POOL 2 QUALIFICATION
+    # FIXED QUALIFIED TEAMS
     #
-    # Pool 2 #1 → SF2 Team A
+    # SF1 = Spike Force vs Ezzey Volleyball
+    # SF2 = Predators vs Avengers
     # =====================================================
 
-    if is_pool_complete("Pool 2"):
+    sf1 = find_match_by_label("SF1")
+    sf2 = find_match_by_label("SF2")
 
-        pool2 = get_pool_standings("Pool 2")
+    if sf1:
+        sf1["teamA"] = "Spike Force"
+        sf1["teamB"] = "Ezzey Volleyball"
 
-        if len(pool2) >= 1 and sf2:
-
-            sf2["teamA"] = pool2[0]["team"]
-
-
-    # =====================================================
-    # POOL 3 QUALIFICATION
-    #
-    # Pool 3 #1 → SF1 Team B
-    # =====================================================
-
-    if is_pool_complete("Pool 3"):
-
-        pool3 = get_pool_standings("Pool 3")
-
-        if len(pool3) >= 1 and sf1:
-
-            sf1["teamB"] = pool3[0]["team"]
-
-
+    if sf2:
+        sf2["teamA"] = "Predators"
+        sf2["teamB"] = "Avengers"
     # =====================================================
     # UNLOCK SF1 ONLY WHEN BOTH REQUIRED POOLS COMPLETE
+    # NEVER REOPEN A FINISHED MATCH
     # =====================================================
 
     if (
         sf1
         and is_pool_complete("Pool 1")
         and is_pool_complete("Pool 3")
+        and sf1.get("status") != "finished"
     ):
-
         sf1["status"] = "upcoming"
 
 
     # =====================================================
     # UNLOCK SF2 ONLY WHEN BOTH REQUIRED POOLS COMPLETE
+    # NEVER REOPEN A FINISHED MATCH
     # =====================================================
 
     if (
         sf2
         and is_pool_complete("Pool 1")
         and is_pool_complete("Pool 2")
+        and sf2.get("status") != "finished"
     ):
-
         sf2["status"] = "upcoming"
 
 
@@ -1620,6 +1719,23 @@ def add_point(match_id, side):
             "error": "Match is not live"
         }), 400
 
+    # =====================================================
+    # BEST OF 3 SAFETY GUARD
+    # NEVER ALLOW POINTS AFTER 2 SET WINS
+    # OR AFTER 3 COMPLETED SETS
+    # =====================================================
+
+    if (
+        match.get("setsA", 0) >= 2
+        or match.get("setsB", 0) >= 2
+        or len(match.get("setHistory", [])) >= 3
+    ):
+        finish_match(match)
+        update_pool_qualification()
+        save_tournament_state()
+
+        return jsonify(match)
+
 
     # Add point
 
@@ -1641,27 +1757,29 @@ def add_point(match_id, side):
     # Check whether set has finished
 
     if check_set_finished(match):
-
         finish_current_set(match)
 
-
-        # First team to win 2 sets wins match
+        # =====================================================
+        # BEST OF 3
+        #
+        # First team to win 2 sets wins the match.
+        # Maximum possible sets = 3.
+        # =====================================================
 
         if (
-            match["setsA"] == 2
-            or match["setsB"] == 2
+            match["setsA"] >= 2
+            or match["setsB"] >= 2
         ):
-
             finish_match(match)
 
-                # Update semifinal / women's final
-            # qualification after a pool match finishes.
-            update_pool_qualification()    
+            # Update qualification / knockout progression
+            update_pool_qualification()
 
         else:
-
-            # Automatically start next set
-
+            # Only possible situation here:
+            # setsA = 1 and setsB = 1
+            #
+            # Start deciding Set 3.
             start_next_set(match)
 
 
@@ -2047,12 +2165,19 @@ def update_scoring_format():
         "scoring_format": scoring_format
     })
 # =========================================================
+# REPAIR OLD INVALID KNOCKOUT MATCHES
+# =========================================================
+
+if repair_invalid_knockout_matches():
+    save_tournament_state()
+
+
+# =========================================================
 # APPLY EXISTING TOURNAMENT QUALIFICATION
 # =========================================================
 
 update_pool_qualification()
 save_tournament_state()
-
 
 # =========================================================
 # RUN APPLICATION

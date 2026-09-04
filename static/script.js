@@ -4,37 +4,59 @@ let isAdmin = false;
 
 
 function getTargetScore(match) {
+    const completedSets = match.setHistory.length;
 
-    const completedSets =
-        match.setHistory.length;
+    // =====================================================
+    // KNOCKOUT MATCHES
+    // SF1, SF2, Men's Final, Women's Final
+    //
+    // Set 1 = 25
+    // Set 2 = 25
+    // Set 3 = 21
+    // =====================================================
+
+    const knockoutStages = [
+        "Semi Final",
+        "Final",
+        "Women's Final"
+    ];
+
+    if (knockoutStages.includes(match.stage)) {
+        return completedSets >= 2
+            ? 21
+            : 25;
+    }
+
+    // =====================================================
+    // POOL MATCHES
+    // Existing scoring format remains unchanged.
+    // =====================================================
 
     const format =
         tournamentData.scoring_format
         || "25-25-15";
 
     if (format === "15-15-25") {
-
-        return completedSets === 2
+        return completedSets >= 2
             ? 25
             : 15;
-
     }
 
-    return completedSets === 2
+    // Default: 25-25-15
+    return completedSets >= 2
         ? 15
         : 25;
-
 }
-
 function getMatchStatusText(match) {
 
     if (match.walkover === true) {
         return "🚫 WALKOVER";
     }
 
-    if (match.rescheduled === true) {
-        return "🔄 RESCHEDULED";
-    }
+
+    // =====================================================
+    // FINISHED ALWAYS HAS PRIORITY
+    // =====================================================
 
     if (
         match.status === "finished" ||
@@ -43,13 +65,33 @@ function getMatchStatusText(match) {
         return "FINISHED";
     }
 
+
+    // =====================================================
+    // RESCHEDULED
+    // =====================================================
+
+    if (match.rescheduled === true) {
+        return "🔄 RESCHEDULED";
+    }
+
+
+    // =====================================================
+    // LIVE
+    // =====================================================
+
     if (match.status === "live") {
         return "🔴 LIVE";
     }
 
+
+    // =====================================================
+    // LOCKED
+    // =====================================================
+
     if (match.status === "locked") {
         return "🔒 LOCKED";
     }
+
 
     return "UPCOMING";
 }
@@ -422,37 +464,40 @@ function getSelectedMatch() {
 ========================================================= */
 
 function updateAdminPanel() {
-
-    const match =
-        getSelectedMatch();
-
+    const match = getSelectedMatch();
 
     if (!match) return;
 
 
+    // =====================================================
+    // TEAM NAMES
+    // =====================================================
+
     document
         .getElementById("adminTeamA")
-        .textContent =
-        match.teamA;
-
+        .textContent = match.teamA;
 
     document
         .getElementById("adminTeamB")
-        .textContent =
-        match.teamB;
+        .textContent = match.teamB;
 
+
+    // =====================================================
+    // CURRENT SCORE
+    // =====================================================
 
     document
         .getElementById("adminScoreA")
-        .textContent =
-        match.scoreA;
-
+        .textContent = match.scoreA;
 
     document
         .getElementById("adminScoreB")
-        .textContent =
-        match.scoreB;
+        .textContent = match.scoreB;
 
+
+    // =====================================================
+    // SET SCORE
+    // =====================================================
 
     document
         .getElementById("adminSets")
@@ -460,18 +505,78 @@ function updateAdminPanel() {
         `${match.setsA} - ${match.setsB}`;
 
 
-    const target =
-        getTargetScore(match);
+    // =====================================================
+    // TARGET
+    // =====================================================
+
+    const target = getTargetScore(match);
+
+    document
+        .getElementById("targetText")
+        .textContent =
+        `Target: ${target}`;
 
 
-        document
-            .getElementById("targetText")
-            .textContent =
-            `Target: ${target}`;
+    // =====================================================
+    // WINNER DISPLAY
+    // =====================================================
 
+    let winnerBox =
+        document.getElementById("adminWinner");
+
+
+    // Create winner box if it does not exist
+    if (!winnerBox) {
+
+        winnerBox =
+            document.createElement("div");
+
+        winnerBox.id = "adminWinner";
+
+        winnerBox.style.marginTop = "15px";
+        winnerBox.style.padding = "12px 16px";
+        winnerBox.style.borderRadius = "10px";
+        winnerBox.style.textAlign = "center";
+        winnerBox.style.fontWeight = "700";
+        winnerBox.style.fontSize = "18px";
+        winnerBox.style.background =
+            "rgba(255, 193, 7, 0.12)";
+        winnerBox.style.border =
+            "1px solid rgba(255, 193, 7, 0.45)";
+
+        const targetText =
+            document.getElementById("targetText");
+
+        targetText.parentNode.appendChild(
+            winnerBox
+        );
     }
 
 
+    // =====================================================
+    // FINISHED MATCH
+    // =====================================================
+
+    if (
+        match.status === "finished"
+        && match.winner
+    ) {
+
+        winnerBox.innerHTML = `
+            🏆 MATCH WINNER
+            <br>
+            <strong>${match.winner}</strong>
+        `;
+
+        winnerBox.style.display = "block";
+
+    } else {
+
+        winnerBox.innerHTML = "";
+
+        winnerBox.style.display = "none";
+    }
+}
 /* =========================================================
    START MATCH
 ========================================================= */
@@ -792,71 +897,133 @@ async function saveFixtureEdit() {
 /* =========================================================
    ADD POINT
 ========================================================= */
+
 async function addPoint(side) {
 
     if (!selectedMatchId) {
-
         alert("Please select a match first.");
-
         return;
-
     }
 
+    // Save the match that is currently being played
+    const currentMatchId = selectedMatchId;
+
+    // Send point to backend
     const response = await fetch(
-
-        `/api/point/${selectedMatchId}/${side}`,
-
+        `/api/point/${currentMatchId}/${side}`,
         {
             method: "POST"
         }
-
     );
 
     const result = await response.json();
 
-
     if (!response.ok) {
-
         alert(
-
-            result.error
-            || "Could not add point."
-
+            result.error ||
+            "Could not add point."
         );
-
         return;
-
     }
 
 
-    // Reload latest tournament data
+    // =====================================================
+    // RELOAD LATEST DATA
+    // =====================================================
+
     tournamentData = await (
-
         await fetch("/api/data")
-
     ).json();
 
 
-    // Keep the same selected match
-    const select = document.getElementById(
+    // =====================================================
+    // FIND THE MATCH WE JUST PLAYED
+    // =====================================================
 
-        "matchSelect"
+    const currentMatchIndex =
+        tournamentData.matches.findIndex(
+            match => match.id === currentMatchId
+        );
 
-    );
-
-    select.value = selectedMatchId;
-
-
-    // Update admin score immediately
-    updateAdminPanel();
+    const currentMatch =
+        currentMatchIndex !== -1
+            ? tournamentData.matches[currentMatchIndex]
+            : null;
 
 
-    // Update public pages
-    updateLiveScore();
-    updateFixtures();
-    updateStandings();
-    updateKnockout();
+    // =====================================================
+    // MATCH FINISHED
+    // =====================================================
 
+    if (
+        currentMatch &&
+        currentMatch.status === "finished"
+    ) {
+
+        // -------------------------------------------------
+        // Find the next available match AFTER this match
+        // -------------------------------------------------
+
+        let nextMatch = null;
+
+        for (
+            let i = currentMatchIndex + 1;
+            i < tournamentData.matches.length;
+            i++
+        ) {
+
+            const candidate =
+                tournamentData.matches[i];
+
+            if (
+                candidate.status !== "locked" &&
+                candidate.status !== "finished"
+            ) {
+                nextMatch = candidate;
+                break;
+            }
+        }
+
+
+        // -------------------------------------------------
+        // If nothing exists after current match,
+        // search from the beginning.
+        // -------------------------------------------------
+
+        if (!nextMatch) {
+
+            nextMatch =
+                tournamentData.matches.find(
+                    match =>
+                        match.status !== "locked" &&
+                        match.status !== "finished"
+                );
+        }
+
+
+        // -------------------------------------------------
+        // Select next match
+        // -------------------------------------------------
+
+        if (nextMatch) {
+            selectedMatchId = nextMatch.id;
+        } else {
+            selectedMatchId = null;
+        }
+
+    } else {
+
+        // Match is still live.
+        // Keep playing the same match.
+        selectedMatchId = currentMatchId;
+    }
+
+
+    // =====================================================
+    // REFRESH EVERYTHING
+    // =====================================================
+
+    updateEverything();
 }
 
 /* =========================================================
@@ -1304,10 +1471,14 @@ function updateFixtures() {
                         : (match.time || "TBA");
   
 
-                        const statusClass =
-                            match.rescheduled === true
-                                ? "rescheduled"
-                                : match.status;
+                     const statusClass =
+    match.status === "finished"
+        ? "finished"
+        : (
+            match.rescheduled === true
+                ? "rescheduled"
+                : match.status
+        );
 
                     container.innerHTML += `
 
@@ -1804,18 +1975,32 @@ function updateKnockout() {
 
                 </div>
 
+<div class="
+    match-status
+    ${match.status}
+">
+    ${getMatchStatusText(match)}
+</div>
 
-                <div class="
-                    match-status
-                    ${match.status}
-                ">
+${match.status === "finished" && match.winner ? `
+    <div class="winner-result">
+        <span class="winner-icon">
+            🏆
+        </span>
 
-                    ${getMatchStatusText(match)}
+        <div class="winner-details">
+            <span class="winner-label">
+                MATCH WINNER
+            </span>
 
-                </div>
+            <strong>
+                ${match.winner}
+            </strong>
+        </div>
+    </div>
+` : ""}
 
-            </div>
-
+</div>
         `;
 
     });
@@ -2023,10 +2208,12 @@ async function setScoringFormat(format) {
 }
 
 
+
 document.addEventListener("DOMContentLoaded", async () => {
 
     await checkAdminStatus();
 
     await loadData();
 
-});
+})
+;
