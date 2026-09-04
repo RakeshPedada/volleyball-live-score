@@ -2086,6 +2086,23 @@ ${match.status === "finished" && match.winner ? `
                     ${getMatchStatusText(match)}
 
                 </div>
+                ${match.status === "finished" && match.winner ? `
+    <div class="winner-result">
+        <span class="winner-icon">
+            🏆
+        </span>
+
+        <div class="winner-details">
+            <span class="winner-label">
+                MATCH WINNER
+            </span>
+
+            <strong>
+                ${match.winner}
+            </strong>
+        </div>
+    </div>
+` : ""}
 
             </div>
 

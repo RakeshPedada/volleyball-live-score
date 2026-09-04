@@ -1233,6 +1233,86 @@ def repair_invalid_knockout_matches():
 
     repaired = False
 
+        # =====================================================
+    # ONE-TIME CORRECTION AFTER SEMIFINAL TEAM REMAPPING
+    #
+    # The semifinal team names were changed after the
+    # original scores were stored. Therefore Team A/Team B
+    # score positions must be corrected.
+    # =====================================================
+
+    sf1 = find_match_by_label("SF1")
+    sf2 = find_match_by_label("SF2")
+
+    # -----------------------------------------------------
+    # SF1
+    # Correct result:
+    # Spike Force defeated Ezzey Volleyball 2-1
+    #
+    # Existing stored result is 1-2 with Spike Force as
+    # winner, so reverse Team A / Team B score orientation.
+    # -----------------------------------------------------
+
+    if (
+        sf1
+        and sf1.get("status") == "finished"
+        and sf1.get("winner") == "Spike Force"
+        and sf1.get("setsA") == 1
+        and sf1.get("setsB") == 2
+    ):
+        history = sf1.get("setHistory", [])
+
+        sf1["setHistory"] = [
+            {
+                "a": item.get("b", 0),
+                "b": item.get("a", 0)
+            }
+            for item in history
+        ]
+
+        sf1["setsA"] = 2
+        sf1["setsB"] = 1
+        sf1["scoreA"] = 0
+        sf1["scoreB"] = 0
+        sf1["winner"] = "Spike Force"
+        sf1["status"] = "finished"
+
+        repaired = True
+
+    # -----------------------------------------------------
+    # SF2
+    # Correct result:
+    # Avengers defeated Predators 2-0
+    #
+    # Existing stored result is Predators 2-0 with Predators
+    # as winner, so reverse Team A / Team B score orientation.
+    # -----------------------------------------------------
+
+    if (
+        sf2
+        and sf2.get("status") == "finished"
+        and sf2.get("winner") == "Predators"
+        and sf2.get("setsA") == 2
+        and sf2.get("setsB") == 0
+    ):
+        history = sf2.get("setHistory", [])
+
+        sf2["setHistory"] = [
+            {
+                "a": item.get("b", 0),
+                "b": item.get("a", 0)
+            }
+            for item in history
+        ]
+
+        sf2["setsA"] = 0
+        sf2["setsB"] = 2
+        sf2["scoreA"] = 0
+        sf2["scoreB"] = 0
+        sf2["winner"] = "Avengers"
+        sf2["status"] = "finished"
+
+        repaired = True
     knockout_stages = [
         "Semi Final",
         "Final",
