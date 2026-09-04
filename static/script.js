@@ -2102,7 +2102,7 @@ ${match.status === "finished" && match.winner ? `
             </strong>
         </div>
     </div>
-` : ""}
+` : ""} photo
 
             </div>
 
